@@ -72,10 +72,8 @@ const MAX = 3;
 // ─── Light factories ─────────────────────────────────────────────
 const DEFAULTS = {
   fresnel:     { beamAngle: 45, softness: 0.5 },
-  movinghead:  { beamAngle: 30, softness: 0.3, speed: 2 },
   gobo:        { beamAngle: 30, softness: 0.3, goboPattern: 'circle', goboRotation: 0, goboScale: 1, goboSVG: null },
   diffusore:   { spread: 5 },
-  strobo:      { frequency: 5 },
 };
 
 function createLight(type) {
@@ -88,17 +86,27 @@ const c = document.getElementById('c');
 const ctx = c.getContext('2d');
 const off = document.createElement('canvas');
 const octx = off.getContext('2d');
+const lc = document.createElement('canvas');
+const lctx = lc.getContext('2d');
+const gc = document.createElement('canvas');
+const gctx = gc.getContext('2d');
 
+let dpr;
 function resize() {
   const rect = c.parentElement.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  c.width = rect.width * dpr;
-  c.height = rect.height * dpr;
-  c.style.width = rect.width + 'px';
-  c.style.height = rect.height + 'px';
-  ctx.scale(dpr, dpr);
+  dpr = window.devicePixelRatio || 1;
+  const w = rect.width;
+  const h = rect.height;
+  c.width = w * dpr;
+  c.height = h * dpr;
+  c.style.width = w + 'px';
+  c.style.height = h + 'px';
+  lc.width = w * dpr;
+  lc.height = h * dpr;
   off.width = 256;
   off.height = 256;
+  gc.width = 256;
+  gc.height = 256;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -143,9 +151,22 @@ function makeGoboTexture(pattern) {
 }
 
 let _goboCache = {};
+
 function getGoboPattern(name) {
   if (!_goboCache[name]) _goboCache[name] = makeGoboTexture(name);
   return _goboCache[name];
+}
+
+function renderSVGPattern(svgDataUrl, key) {
+  const img = new Image();
+  img.onload = () => {
+    octx.clearRect(0, 0, 256, 256);
+    octx.fillStyle = '#000';
+    octx.fillRect(0, 0, 256, 256);
+    octx.drawImage(img, 0, 0, 256, 256);
+    _goboCache[key] = octx.getImageData(0, 0, 256, 256);
+  };
+  img.src = svgDataUrl;
 }
 
 // ─── 3D to 2D mapping ────────────────────────────────────────────
@@ -204,8 +225,8 @@ function render() {
   for (const l of active) {
     const shadowAlpha = l.intensity * S.master * 0.3;
     ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
-    cx = W/2 + l.x * 15;
-    cy = floorY + 10;
+    let cx = W/2 + l.x * 15;
+    let cy = floorY + 10;
     ctx.beginPath();
     ctx.ellipse(cx, cy, 40 + beamRadius(l.beamAngle ?? 30, l.z) * 0.5, 12, 0, 0, Math.PI*2);
     ctx.fill();
@@ -217,13 +238,6 @@ function render() {
     const intens = l.intensity * mi;
     const { px, py } = lightPos(l.x, l.y);
     const r = beamRadius(l.beamAngle ?? 30, l.z) * 1.5;
-
-    let isStroboOn = true;
-    if (l.type === 'strobo') {
-      const phase = Math.sin(S.t * l.frequency * Math.PI * 2);
-      isStroboOn = phase > 0;
-    }
-    if (!isStroboOn) continue;
 
     const grad = ctx.createRadialGradient(px, py, 0, px, py, r);
     const col = hexToRgb(l.color);
@@ -247,91 +261,90 @@ function render() {
   ctx.font = `bold ${fontSize}px 'Segoe UI', system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const tw = ctx.measureText(word).width;
   const wordX = W/2;
   const wordY = H * 0.45;
 
-  // Draw word base
+  // Draw word base (shadow + base color)
   ctx.fillStyle = '#555';
   ctx.fillText(word, wordX + 2, wordY + 2);
   ctx.fillStyle = '#aaa';
   ctx.fillText(word, wordX, wordY);
 
-  // 5. Light effects on word using compositing
-  // Save, draw word in white, then color with lights via source-atop
-  ctx.save();
-  // Draw word again as pure white for the light target
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = '#fff';
-  ctx.fillText(word, wordX, wordY);
+  // 5. Light effects on word — render all lights to offscreen canvas, then composite once
+  lctx.clearRect(0, 0, W, H);
+  // Pre-scale for devicePixelRatio
+  lctx.setTransform(1, 0, 0, 1, 0, 0);
+  lctx.scale(dpr, dpr);
 
-  // Now apply light colors onto the word using source-atop
-  ctx.globalCompositeOperation = 'source-atop';
   for (const l of active) {
     const mi = S.master;
     const intens = l.intensity * mi;
-
-    if (l.type === 'strobo') {
-      const phase = Math.sin(S.t * l.frequency * Math.PI * 2);
-      if (phase <= 0) continue;
-    }
-
     const { px, py } = lightPos(l.x, l.y);
     const r = beamRadius(l.beamAngle ?? 30, l.z) * 0.8;
     const col = hexToRgb(l.color);
     const soft = l.softness ?? 0.3;
 
-    if (l.type === 'gobo' && l.goboPattern) {
-      // Gobo: draw pattern clipped to word
-      const pattern = l.goboPattern === 'custom' && l.goboSVG
-        ? null // SVG rendering would need img load - skip for simplicity
-        : getGoboPattern(l.goboPattern);
+    lctx.globalCompositeOperation = 'lighter';
+
+    if (l.type === 'gobo') {
+      // Gobo: draw gradient then mask with pattern
+      const key = l.goboPattern === 'custom' ? 'svg_' + l.id : l.goboPattern;
+      const pattern = _goboCache[key];
 
       if (pattern) {
-        // Create pattern clip
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(px, py, r, 0, Math.PI * 2);
-        ctx.clip();
-        // Scale and rotate pattern onto the area
+        // Render gobo on temp canvas: layer gradient with pattern mask
+        gctx.clearRect(0, 0, 256, 256);
+        gctx.fillStyle = `rgba(${col.r},${col.g},${col.b},${intens * 0.9})`;
+        gctx.fillRect(0, 0, 256, 256);
+        const pData = gctx.getImageData(0, 0, 256, 256);
+
+        // Apply pattern as alpha mask: preserve light intensity, cut where pattern is black
+        for (let i = 3; i < pData.data.length; i += 4) {
+          pData.data[i] = (pData.data[i] * pattern.data[i]) / 255;
+        }
+        gctx.putImageData(pData, 0, 0);
+
+        // Draw masked color onto compositing canvas
+        lctx.save();
+        lctx.beginPath();
+        lctx.arc(px, py, r, 0, Math.PI * 2);
+        lctx.clip();
         const scale = l.goboScale ?? 1;
         const rot = (l.goboRotation ?? 0) * Math.PI / 180;
-        const sx = px - r;
-        const sy = py - r;
-        ctx.translate(px, py);
-        ctx.rotate(rot);
-        ctx.scale(scale, scale);
-        ctx.translate(-px, -py);
-        ctx.putImageData(pattern, px - 128, py - 128);
-        ctx.restore();
+        lctx.translate(px, py);
+        lctx.rotate(rot);
+        lctx.scale(scale, scale);
+        lctx.drawImage(gc, -128, -128);
+        lctx.restore();
       }
     } else {
-      // Fresnel style gradient on word
-      const grad = ctx.createRadialGradient(px, py, 0, px, py, r);
+      // Fresnel / Diffusore: additive radial gradient
+      const grad = lctx.createRadialGradient(px, py, 0, px, py, r);
       const innerStop = Math.max(0.5, 1 - soft);
       grad.addColorStop(0, `rgba(${col.r},${col.g},${col.b},${intens * 0.9})`);
       grad.addColorStop(innerStop, `rgba(${col.r},${col.g},${col.b},${intens * 0.5})`);
       grad.addColorStop(1, `rgba(${col.r},${col.g},${col.b},0)`);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H);
+      lctx.fillStyle = grad;
+      lctx.fillRect(0, 0, W, H);
     }
   }
 
+  // Draw the word in pure white, then apply blended light canvas with source-atop
+  ctx.save();
   ctx.globalCompositeOperation = 'source-over';
-
-  // Add a soft glow highlight on the word
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillStyle = '#fff';
   ctx.fillText(word, wordX, wordY);
 
+  ctx.globalCompositeOperation = 'source-atop';
+  ctx.drawImage(lc, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Soft glow highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillText(word, wordX, wordY);
   ctx.restore();
 
-  // 6. Moving head animation update
-  for (const l of S.lights) {
-    if (l.type === 'movinghead' && l.active) {
-      // Position is already stored, but the visual movement
-      // is done in render via the state's x,y which get updated
-    }
-  }
+
 
   // Gobo rotation animation (if active)
   // handled by control panel updating the state
@@ -360,10 +373,9 @@ function showToast(msg) {
 
 const LIGHT_TYPES = [
   { v: 'fresnel', l: 'Fresnel' },
-  { v: 'movinghead', l: 'Moving Head' },
   { v: 'gobo', l: 'Gobo' },
   { v: 'diffusore', l: 'Diffusore' },
-  { v: 'strobo', l: 'Strobo' },
+
 ];
 
 function renderPanel() {
@@ -493,9 +505,6 @@ function renderChannel(l) {
   ch.appendChild(field('Soft', createSlider(0, 1, 0.01, l.softness ?? 0.3, v => { updateLight(l.id, { softness: v }); })));
 
   // Type-specific controls
-  if (l.type === 'movinghead') {
-    ch.appendChild(field('Speed', createSlider(0.5, 5, 0.1, l.speed, v => { updateLight(l.id, { speed: v }); })));
-  }
   if (l.type === 'gobo') {
     const sel = document.createElement('select');
     for (const p of ['circle', 'star', 'grid', 'diamond', 'cross']) {
@@ -524,7 +533,9 @@ function renderChannel(l) {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
-        updateLight(l.id, { goboPattern: 'custom', goboSVG: ev.target.result });
+        const dataUrl = ev.target.result;
+        renderSVGPattern(dataUrl, 'svg_' + l.id);
+        updateLight(l.id, { goboPattern: 'custom', goboSVG: dataUrl });
         renderPanel();
       };
       reader.readAsDataURL(file);
@@ -536,18 +547,8 @@ function renderChannel(l) {
     ch.appendChild(field('SVG', ub));
     ch.appendChild(fu);
   }
-  if (l.type === 'strobo') {
-    ch.appendChild(field('Freq.', createSlider(1, 20, 1, l.frequency, v => { updateLight(l.id, { frequency: v }); }), l.frequency + ' Hz'));
-  }
   if (l.type === 'diffusore') {
     ch.appendChild(field('Spread', createSlider(1, 10, 0.5, l.spread, v => { updateLight(l.id, { spread: v }); })));
-  }
-
-  // Moving head animation: update x,y over time
-  if (l.type === 'movinghead' && l.active) {
-    const speed = l.speed ?? 2;
-    l.x = (l._baseX ?? 0) + Math.sin(S.t * speed * 1.3) * 2;
-    l.y = (l._baseY ?? 3) + Math.cos(S.t * speed * 0.7) * 1.5;
   }
 
   return ch;
