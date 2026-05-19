@@ -9,9 +9,9 @@
 html, body { width: 100%; height: 100%; overflow: hidden; background: #000; color: #ccc; font-family: 'Segoe UI', system-ui, sans-serif; }
 
 .app { display: flex; width: 100%; height: 100vh; }
-.scene-panel { flex: 1; height: 100%; }
+.scene-panel { flex: 0 0 800px; width: 800px; height: 800px; }
 .mixer-panel {
-  width: 280px; min-width: 280px; height: 100%;
+  flex: 1; height: 100%;
   background: #111; border-left: 1px solid #222;
   overflow-y: auto; padding: 12px;
 }
@@ -42,99 +42,132 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 }
 .add-btn:hover { border-color: #ffd700; color: #ffd700; }
 
-canvas { display: block; width: 100%; height: 100%; }
+canvas { display: block; width: 800px; height: 800px; }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="scene-panel">
-    <canvas id="c"></canvas>
+    <canvas id="c" width="800" height="800"></canvas>
   </div>
   <div class="mixer-panel" id="panel"></div>
 </div>
 <script>
-// ─── State ───────────────────────────────────────────────────────
 const S = {
   word: 'LUCE',
   spotlights: [],
   nextId: 1,
 };
 
+const W = 800;
+const H = 800;
+
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const tmp = document.createElement('canvas');
+tmp.width = W;
+tmp.height = H;
+const tc = tmp.getContext('2d');
+const mask = document.createElement('canvas');
+mask.width = W;
+mask.height = H;
+const mc = mask.getContext('2d');
+
 function createSpotlight() {
   const id = S.nextId++;
   return {
-    id,
-    active: true,
-    color: '#ffffff',
-    softness: 0.5,
-    speed: 0.5,
-    wander: 0.5,
-    x: Math.random(),
-    y: Math.random(),
-    vx: 0,
-    vy: 0,
-    targetX: Math.random(),
-    targetY: Math.random(),
-    radius: 120,
+    id, active: true, color: '#ffffff', softness: 0.5, speed: 0.5, wander: 0.5,
+    x: Math.random(), y: Math.random(), vx: 0, vy: 0,
+    targetX: Math.random(), targetY: Math.random(), radius: 120,
   };
 }
 
 function addSpotlight() {
   const sl = createSpotlight();
-  sl.x = Math.random();
-  sl.y = Math.random();
-  sl.targetX = sl.x;
-  sl.targetY = sl.y;
+  sl.x = Math.random(); sl.y = Math.random();
+  sl.targetX = sl.x; sl.targetY = sl.y;
   S.spotlights.push(sl);
   renderPanel();
 }
 
-function removeSpotlight(id) {
-  S.spotlights = S.spotlights.filter(s => s.id !== id);
-  renderPanel();
+function removeSpotlight(id) { S.spotlights = S.spotlights.filter(s => s.id !== id); renderPanel(); }
+function toggleSpotlight(id) { const s = S.spotlights.find(s => s.id === id); if (s) s.active = !s.active; renderPanel(); }
+function updateSpotlight(id, p) { const s = S.spotlights.find(s => s.id === id); if (s) Object.assign(s, p); }
+
+const TARGET_CHANGE_INTERVAL = 120;
+let fc = 0;
+
+function updateMovement() {
+  fc++;
+  for (const s of S.spotlights) {
+    if (!s.active) continue;
+    if (fc % TARGET_CHANGE_INTERVAL === 0) {
+      const wr = s.wander * 0.4;
+      s.targetX = Math.max(0.05, Math.min(0.95, s.x + (Math.random() - 0.5) * wr * 2));
+      s.targetY = Math.max(0.05, Math.min(0.95, s.y + (Math.random() - 0.5) * wr * 2));
+    }
+    const a = s.speed * 0.02;
+    s.vx += (s.targetX - s.x) * a;
+    s.vy += (s.targetY - s.y) * a;
+    s.vx *= 0.95; s.vy *= 0.95;
+    s.x += s.vx; s.y += s.vy;
+    s.x = Math.max(0, Math.min(1, s.x));
+    s.y = Math.max(0, Math.min(1, s.y));
+  }
 }
 
-function toggleSpotlight(id) {
-  const sl = S.spotlights.find(s => s.id === id);
-  if (sl) sl.active = !sl.active;
-  renderPanel();
+function render() {
+  updateMovement();
+  const word = S.word || ' ';
+  const fontSize = Math.min(H * 0.18, W * 0.08);
+
+  // 1. Black background
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const active = S.spotlights.filter(s => s.active);
+  if (active.length === 0) { requestAnimationFrame(render); return; }
+
+  // 2. For each spotlight: draw word colored, clipped to spotlight circle
+  for (const s of active) {
+    const px = s.x * W;
+    const py = s.y * H;
+    const r = s.radius;
+    const col = hexToRgb(s.color);
+    const innerStop = Math.max(0, 1 - s.softness * 0.8);
+
+    // Clear temp canvas
+    tc.clearRect(0, 0, W, H);
+
+    // Draw the spotlight gradient mask
+    mc.clearRect(0, 0, W, H);
+    const g = mc.createRadialGradient(px, py, 0, px, py, r);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(innerStop, 'rgba(255,255,255,1)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    mc.fillStyle = g;
+    mc.beginPath();
+    mc.arc(px, py, r, 0, Math.PI * 2);
+    mc.fill();
+
+    // Draw the word in the spotlight color on temp canvas
+    tc.font = `bold ${fontSize}px 'Segoe UI', system-ui, sans-serif`;
+    tc.textAlign = 'center';
+    tc.textBaseline = 'middle';
+    tc.fillStyle = `rgb(${col.r},${col.g},${col.b})`;
+    tc.fillText(word, W / 2, H / 2);
+
+    // Clip word to spotlight circle using gradient mask
+    tc.globalCompositeOperation = 'destination-in';
+    tc.drawImage(mask, 0, 0);
+    tc.globalCompositeOperation = 'source-over';
+
+    // Draw onto main canvas
+    ctx.drawImage(tmp, 0, 0);
+  }
+
+  requestAnimationFrame(render);
 }
-
-function updateSpotlight(id, patch) {
-  const sl = S.spotlights.find(s => s.id === id);
-  if (sl) Object.assign(sl, patch);
-}
-
-// ─── Canvas setup ─────────────────────────────────────────────────
-const c = document.getElementById('c');
-const ctx = c.getContext('2d');
-const maskCanvas = document.createElement('canvas');
-const maskCtx = maskCanvas.getContext('2d');
-const colorCanvas = document.createElement('canvas');
-const colorCtx = colorCanvas.getContext('2d');
-const wordCanvas = document.createElement('canvas');
-const wordCtx = wordCanvas.getContext('2d');
-
-let W, H, dpr;
-
-function resize() {
-  const rect = c.parentElement.getBoundingClientRect();
-  dpr = window.devicePixelRatio || 1;
-  W = rect.width;
-  H = rect.height;
-  c.width = W * dpr;
-  c.height = H * dpr;
-  c.style.width = W + 'px';
-  c.style.height = H + 'px';
-  maskCanvas.width = W * dpr;
-  maskCanvas.height = H * dpr;
-  colorCanvas.width = W * dpr;
-  colorCanvas.height = H * dpr;
-  wordCanvas.width = W * dpr;
-  wordCanvas.height = H * dpr;
-}
-window.addEventListener('resize', resize);
-resize();
 
 function hexToRgb(hex) {
   const r = parseInt(hex.slice(1,3), 16);
@@ -143,225 +176,48 @@ function hexToRgb(hex) {
   return { r, g, b };
 }
 
-// ─── Movement ─────────────────────────────────────────────────────
-const TARGET_CHANGE_INTERVAL = 120;
-let frameCount = 0;
-
-function updateMovement() {
-  frameCount++;
-  for (const sl of S.spotlights) {
-    if (!sl.active) continue;
-
-    if (frameCount % TARGET_CHANGE_INTERVAL === 0) {
-      const wanderRadius = sl.wander * 0.4;
-      sl.targetX = clamp(sl.x + (Math.random() - 0.5) * wanderRadius * 2, 0.05, 0.95);
-      sl.targetY = clamp(sl.y + (Math.random() - 0.5) * wanderRadius * 2, 0.05, 0.95);
-    }
-
-    const accel = sl.speed * 0.02;
-    sl.vx += (sl.targetX - sl.x) * accel;
-    sl.vy += (sl.targetY - sl.y) * accel;
-
-    sl.vx *= 0.95;
-    sl.vy *= 0.95;
-
-    sl.x += sl.vx;
-    sl.y += sl.vy;
-
-    sl.x = clamp(sl.x, 0, 1);
-    sl.y = clamp(sl.y, 0, 1);
-  }
-}
-
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-
-// ─── Render loop ──────────────────────────────────────────────────
-function render() {
-  updateMovement();
-
-  const word = S.word || ' ';
-
-  // 1. Clear main canvas to black
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, W, H);
-
-  // 2. Clear offscreen canvases
-  const s = dpr;
-  maskCtx.setTransform(s, 0, 0, s, 0, 0);
-  colorCtx.setTransform(s, 0, 0, s, 0, 0);
-  wordCtx.setTransform(s, 0, 0, s, 0, 0);
-  maskCtx.clearRect(0, 0, W, H);
-  colorCtx.clearRect(0, 0, W, H);
-  wordCtx.clearRect(0, 0, W, H);
-
-  const active = S.spotlights.filter(s => s.active);
-
-  if (active.length === 0) {
-    requestAnimationFrame(render);
-    return;
-  }
-
-  // 3. Draw each spotlight gradient on mask and color canvases
-  for (const sl of active) {
-    const px = sl.x * W;
-    const py = sl.y * H;
-    const r = sl.radius;
-    const col = hexToRgb(sl.color);
-
-    const innerStop = Math.max(0, 1 - sl.softness * 0.8);
-
-    const mg = maskCtx.createRadialGradient(px, py, 0, px, py, r);
-    mg.addColorStop(0, 'rgba(255,255,255,1)');
-    mg.addColorStop(innerStop, 'rgba(255,255,255,1)');
-    mg.addColorStop(1, 'rgba(255,255,255,0)');
-    maskCtx.fillStyle = mg;
-    maskCtx.beginPath();
-    maskCtx.arc(px, py, r, 0, Math.PI * 2);
-    maskCtx.fill();
-
-    const cg = colorCtx.createRadialGradient(px, py, 0, px, py, r);
-    cg.addColorStop(0, `rgba(${col.r},${col.g},${col.b},1)`);
-    cg.addColorStop(innerStop, `rgba(${col.r},${col.g},${col.b},1)`);
-    cg.addColorStop(1, `rgba(${col.r},${col.g},${col.b},0)`);
-    colorCtx.fillStyle = cg;
-    colorCtx.beginPath();
-    colorCtx.arc(px, py, r, 0, Math.PI * 2);
-    colorCtx.fill();
-  }
-
-  // 4. Draw the word on wordCanvas (transparent bg, white text)
-  const fontSize = Math.min(H * 0.18, W * 0.08);
-  wordCtx.font = `bold ${fontSize}px 'Segoe UI', system-ui, sans-serif`;
-  wordCtx.textAlign = 'center';
-  wordCtx.textBaseline = 'middle';
-  wordCtx.fillStyle = '#fff';
-  wordCtx.fillText(word, W / 2, H / 2);
-
-  // 5. Clip word letters to spotlight mask — only word pixels survive
-  wordCtx.globalCompositeOperation = 'destination-in';
-  wordCtx.drawImage(maskCanvas, 0, 0);
-  wordCtx.globalCompositeOperation = 'source-over';
-
-  // 6. Tint only the word letters with spotlight colors
-  wordCtx.globalCompositeOperation = 'source-atop';
-  wordCtx.drawImage(colorCanvas, 0, 0);
-  wordCtx.globalCompositeOperation = 'source-over';
-
-  // 7. Draw only the revealed+tinted word onto the black canvas
-  ctx.drawImage(wordCanvas, 0, 0);
-
-  requestAnimationFrame(render);
-}
-
-// ─── Control Panel ───────────────────────────────────────────────
 const panel = document.getElementById('panel');
 
 function renderPanel() {
   panel.innerHTML = '';
-
-  const title = document.createElement('div');
-  title.className = 'panel-title';
-  title.textContent = 'SPOTLIGHT';
-  panel.appendChild(title);
-
-  const f1 = field('Parola', createInput('text', S.word, v => { S.word = v; }));
-  panel.appendChild(f1);
-
-  const sec = document.createElement('div');
-  sec.className = 'section-title';
-  sec.textContent = 'CANALI';
-  panel.appendChild(sec);
-
-  for (const sl of S.spotlights) {
-    panel.appendChild(renderChannel(sl));
-  }
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-btn';
-  addBtn.textContent = '+ Aggiungi spotlight';
-  addBtn.addEventListener('click', addSpotlight);
-  panel.appendChild(addBtn);
+  const t = document.createElement('div'); t.className = 'panel-title'; t.textContent = 'SPOTLIGHT'; panel.appendChild(t);
+  panel.appendChild(field('Parola', createInput('text', S.word, v => { S.word = v; })));
+  const sec = document.createElement('div'); sec.className = 'section-title'; sec.textContent = 'CANALI'; panel.appendChild(sec);
+  for (const s of S.spotlights) panel.appendChild(renderChannel(s));
+  const b = document.createElement('button'); b.className = 'add-btn'; b.textContent = '+ Aggiungi spotlight';
+  b.addEventListener('click', addSpotlight); panel.appendChild(b);
 }
 
-function renderChannel(sl) {
+function renderChannel(s) {
   const ch = document.createElement('div');
-  ch.className = 'channel' + (sl.active ? ' active' : '');
-
-  const hdr = document.createElement('div');
-  hdr.className = 'channel-hdr';
-
+  ch.className = 'channel' + (s.active ? ' active' : '');
+  const hdr = document.createElement('div'); hdr.className = 'channel-hdr';
   const tog = document.createElement('button');
-  tog.className = 'tog ' + (sl.active ? 'on' : 'off');
-  tog.textContent = sl.active ? 'ON' : 'OFF';
-  tog.addEventListener('click', () => toggleSpotlight(sl.id));
+  tog.className = 'tog ' + (s.active ? 'on' : 'off');
+  tog.textContent = s.active ? 'ON' : 'OFF';
+  tog.addEventListener('click', () => toggleSpotlight(s.id));
   hdr.appendChild(tog);
-
-  const num = document.createElement('span');
-  num.className = 'ch-num';
-  num.textContent = 'Spot ' + sl.id;
-  hdr.appendChild(num);
-
-  const rm = document.createElement('button');
-  rm.className = 'rm';
-  rm.textContent = '✕';
-  rm.addEventListener('click', () => removeSpotlight(sl.id));
-  hdr.appendChild(rm);
-
+  const num = document.createElement('span'); num.className = 'ch-num'; num.textContent = 'Spot ' + s.id; hdr.appendChild(num);
+  const rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '✕';
+  rm.addEventListener('click', () => removeSpotlight(s.id)); hdr.appendChild(rm);
   ch.appendChild(hdr);
-
-  ch.appendChild(field('Colore', createColorPicker(sl.color, v => { updateSpotlight(sl.id, { color: v }); renderPanel(); })));
-  ch.appendChild(field('Softness', createSlider(0, 1, 0.01, sl.softness, v => { updateSpotlight(sl.id, { softness: v }); }), sl.softness.toFixed(2)));
-  ch.appendChild(field('Speed', createSlider(0, 1, 0.01, sl.speed, v => { updateSpotlight(sl.id, { speed: v }); }), sl.speed.toFixed(2)));
-  ch.appendChild(field('Wander', createSlider(0, 1, 0.01, sl.wander, v => { updateSpotlight(sl.id, { wander: v }); }), sl.wander.toFixed(2)));
-
+  ch.appendChild(field('Colore', createColorPicker(s.color, v => { updateSpotlight(s.id, { color: v }); renderPanel(); })));
+  ch.appendChild(field('Softness', createSlider(0, 1, 0.01, s.softness, v => { updateSpotlight(s.id, { softness: v }); }), s.softness.toFixed(2)));
+  ch.appendChild(field('Speed', createSlider(0, 1, 0.01, s.speed, v => { updateSpotlight(s.id, { speed: v }); }), s.speed.toFixed(2)));
+  ch.appendChild(field('Wander', createSlider(0, 1, 0.01, s.wander, v => { updateSpotlight(s.id, { wander: v }); }), s.wander.toFixed(2)));
   return ch;
 }
 
-// ─── UI helpers ───────────────────────────────────────────────────
-function field(label, el, extra) {
-  const d = document.createElement('div');
-  d.className = 'field';
-  const sp = document.createElement('span');
-  sp.className = 'label';
-  sp.textContent = label;
-  d.appendChild(sp);
-  d.appendChild(el);
-  if (extra !== undefined) {
-    const v = document.createElement('span');
-    v.className = 'val';
-    v.textContent = extra;
-    d.appendChild(v);
-  }
+function field(l, el, e) {
+  const d = document.createElement('div'); d.className = 'field';
+  const sp = document.createElement('span'); sp.className = 'label'; sp.textContent = l; d.appendChild(sp); d.appendChild(el);
+  if (e !== undefined) { const v = document.createElement('span'); v.className = 'val'; v.textContent = e; d.appendChild(v); }
   return d;
 }
+function createInput(t, v, cb) { const e = document.createElement('input'); e.className = 'text-input'; e.type = t; e.value = v; e.addEventListener('input', () => cb(e.value)); return e; }
+function createSlider(min, max, step, v, cb) { const e = document.createElement('input'); e.type = 'range'; e.min = min; e.max = max; e.step = step; e.value = v; e.addEventListener('input', () => cb(Number(e.value))); return e; }
+function createColorPicker(v, cb) { const e = document.createElement('input'); e.type = 'color'; e.value = v; e.addEventListener('input', () => cb(e.value)); return e; }
 
-function createInput(type, val, cb) {
-  const el = document.createElement('input');
-  el.className = 'text-input';
-  el.type = type;
-  el.value = val;
-  el.addEventListener('input', () => cb(el.value));
-  return el;
-}
-
-function createSlider(min, max, step, val, cb) {
-  const el = document.createElement('input');
-  el.type = 'range';
-  el.min = min; el.max = max; el.step = step;
-  el.value = val;
-  el.addEventListener('input', () => cb(Number(el.value)));
-  return el;
-}
-
-function createColorPicker(val, cb) {
-  const el = document.createElement('input');
-  el.type = 'color';
-  el.value = val;
-  el.addEventListener('input', () => cb(el.value));
-  return el;
-}
-
-// ─── Init ─────────────────────────────────────────────────────────
 addSpotlight();
 renderPanel();
 render();
