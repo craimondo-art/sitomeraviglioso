@@ -139,8 +139,41 @@ function hexToRgb(hex) {
   return { r, g, b };
 }
 
-// ─── Render loop (placeholder) ────────────────────────────────────
+// ─── Movement ─────────────────────────────────────────────────────
+const TARGET_CHANGE_INTERVAL = 120;
+let frameCount = 0;
+
+function updateMovement() {
+  frameCount++;
+  for (const sl of S.spotlights) {
+    if (!sl.active) continue;
+
+    if (frameCount % TARGET_CHANGE_INTERVAL === 0) {
+      const wanderRadius = sl.wander * 0.4;
+      sl.targetX = clamp(sl.x + (Math.random() - 0.5) * wanderRadius * 2, 0.05, 0.95);
+      sl.targetY = clamp(sl.y + (Math.random() - 0.5) * wanderRadius * 2, 0.05, 0.95);
+    }
+
+    const accel = sl.speed * 0.02;
+    sl.vx += (sl.targetX - sl.x) * accel;
+    sl.vy += (sl.targetY - sl.y) * accel;
+
+    sl.vx *= 0.95;
+    sl.vy *= 0.95;
+
+    sl.x += sl.vx;
+    sl.y += sl.vy;
+
+    sl.x = clamp(sl.x, 0, 1);
+    sl.y = clamp(sl.y, 0, 1);
+  }
+}
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+// ─── Render loop ──────────────────────────────────────────────────
 function render() {
+  updateMovement();
   requestAnimationFrame(render);
 }
 
