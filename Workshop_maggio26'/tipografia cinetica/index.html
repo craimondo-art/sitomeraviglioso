@@ -112,6 +112,8 @@ const maskCanvas = document.createElement('canvas');
 const maskCtx = maskCanvas.getContext('2d');
 const colorCanvas = document.createElement('canvas');
 const colorCtx = colorCanvas.getContext('2d');
+const wordCanvas = document.createElement('canvas');
+const wordCtx = wordCanvas.getContext('2d');
 
 let W, H, dpr;
 
@@ -128,6 +130,8 @@ function resize() {
   maskCanvas.height = H * dpr;
   colorCanvas.width = W * dpr;
   colorCanvas.height = H * dpr;
+  wordCanvas.width = W * dpr;
+  wordCanvas.height = H * dpr;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -182,10 +186,13 @@ function render() {
   ctx.fillRect(0, 0, W, H);
 
   // 2. Clear offscreen canvases
-  maskCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  colorCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const s = dpr;
+  maskCtx.setTransform(s, 0, 0, s, 0, 0);
+  colorCtx.setTransform(s, 0, 0, s, 0, 0);
+  wordCtx.setTransform(s, 0, 0, s, 0, 0);
   maskCtx.clearRect(0, 0, W, H);
   colorCtx.clearRect(0, 0, W, H);
+  wordCtx.clearRect(0, 0, W, H);
 
   const active = S.spotlights.filter(s => s.active);
 
@@ -194,7 +201,7 @@ function render() {
     return;
   }
 
-  // 3. Draw each spotlight gradient on both masks and color canvases
+  // 3. Draw each spotlight gradient on mask and color canvases
   for (const sl of active) {
     const px = sl.x * W;
     const py = sl.y * H;
@@ -222,25 +229,26 @@ function render() {
     colorCtx.fill();
   }
 
-  // 4. Draw the word in white
+  // 4. Draw the word on wordCanvas (transparent bg, white text)
   const fontSize = Math.min(H * 0.18, W * 0.08);
-  ctx.font = `bold ${fontSize}px 'Segoe UI', system-ui, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const wordX = W / 2;
-  const wordY = H / 2;
-  ctx.fillStyle = '#fff';
-  ctx.fillText(word, wordX, wordY);
+  wordCtx.font = `bold ${fontSize}px 'Segoe UI', system-ui, sans-serif`;
+  wordCtx.textAlign = 'center';
+  wordCtx.textBaseline = 'middle';
+  wordCtx.fillStyle = '#fff';
+  wordCtx.fillText(word, W / 2, H / 2);
 
-  // 5. Clip word to spotlight mask: keep only lit word pixels
-  ctx.globalCompositeOperation = 'destination-in';
-  ctx.drawImage(maskCanvas, 0, 0);
-  ctx.globalCompositeOperation = 'source-over';
+  // 5. Clip word letters to spotlight mask — only word pixels survive
+  wordCtx.globalCompositeOperation = 'destination-in';
+  wordCtx.drawImage(maskCanvas, 0, 0);
+  wordCtx.globalCompositeOperation = 'source-over';
 
-  // 6. Tint visible word with spotlight colors
-  ctx.globalCompositeOperation = 'source-atop';
-  ctx.drawImage(colorCanvas, 0, 0);
-  ctx.globalCompositeOperation = 'source-over';
+  // 6. Tint only the word letters with spotlight colors
+  wordCtx.globalCompositeOperation = 'source-atop';
+  wordCtx.drawImage(colorCanvas, 0, 0);
+  wordCtx.globalCompositeOperation = 'source-over';
+
+  // 7. Draw only the revealed+tinted word onto the black canvas
+  ctx.drawImage(wordCanvas, 0, 0);
 
   requestAnimationFrame(render);
 }
