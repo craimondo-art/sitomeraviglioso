@@ -75,18 +75,17 @@ const mc = mask.getContext('2d');
 
 function createSpotlight() {
   const id = S.nextId++;
+  const angle = Math.random() * Math.PI * 2;
   return {
     id, active: true, color: '#ffffff', softness: 0.5, speed: 0.5, wander: 0.5,
-    x: Math.random(), y: Math.random(), vx: 0, vy: 0,
-    targetX: Math.random(), targetY: Math.random(), radius: 120,
+    x: 0.5, y: 0.5,
+    vx: Math.cos(angle), vy: Math.sin(angle),
+    radius: 120,
   };
 }
 
 function addSpotlight() {
-  const sl = createSpotlight();
-  sl.x = Math.random(); sl.y = Math.random();
-  sl.targetX = sl.x; sl.targetY = sl.y;
-  S.spotlights.push(sl);
+  S.spotlights.push(createSpotlight());
   renderPanel();
 }
 
@@ -94,25 +93,34 @@ function removeSpotlight(id) { S.spotlights = S.spotlights.filter(s => s.id !== 
 function toggleSpotlight(id) { const s = S.spotlights.find(s => s.id === id); if (s) s.active = !s.active; renderPanel(); }
 function updateSpotlight(id, p) { const s = S.spotlights.find(s => s.id === id); if (s) Object.assign(s, p); }
 
-const TARGET_CHANGE_INTERVAL = 120;
-let fc = 0;
-
 function updateMovement() {
-  fc++;
   for (const s of S.spotlights) {
     if (!s.active) continue;
-    if (fc % TARGET_CHANGE_INTERVAL === 0) {
-      const wr = s.wander * 0.4;
-      s.targetX = Math.max(0.05, Math.min(0.95, s.x + (Math.random() - 0.5) * wr * 2));
-      s.targetY = Math.max(0.05, Math.min(0.95, s.y + (Math.random() - 0.5) * wr * 2));
-    }
-    const a = s.speed * 0.02;
-    s.vx += (s.targetX - s.x) * a;
-    s.vy += (s.targetY - s.y) * a;
-    s.vx *= 0.95; s.vy *= 0.95;
-    s.x += s.vx; s.y += s.vy;
-    s.x = Math.max(0, Math.min(1, s.x));
-    s.y = Math.max(0, Math.min(1, s.y));
+
+    // Wander: random rotation of velocity direction
+    const wa = (Math.random() - 0.5) * s.wander * 0.4;
+    const c = Math.cos(wa);
+    const t = Math.sin(wa);
+    const vx2 = s.vx * c - s.vy * t;
+    const vy2 = s.vx * t + s.vy * c;
+    s.vx = vx2;
+    s.vy = vy2;
+
+    // Normalize to maintain consistent direction magnitude
+    const len = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+    if (len > 0) { s.vx /= len; s.vy /= len; }
+
+    // Move: speed maps to 0-5 pixels per frame on 800px canvas
+    const px = s.speed * 5;
+    s.x += s.vx * (px / W);
+    s.y += s.vy * (px / H);
+
+    // Bounce off canvas edges (margin keeps circle mostly visible)
+    const m = 0.08;
+    if (s.x < m) { s.x = m + (m - s.x); s.vx = -s.vx; }
+    if (s.x > 1 - m) { s.x = 1 - m - (s.x - (1 - m)); s.vx = -s.vx; }
+    if (s.y < m) { s.y = m + (m - s.y); s.vy = -s.vy; }
+    if (s.y > 1 - m) { s.y = 1 - m - (s.y - (1 - m)); s.vy = -s.vy; }
   }
 }
 
