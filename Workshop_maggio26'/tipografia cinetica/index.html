@@ -174,8 +174,72 @@ function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 // ─── Render loop ──────────────────────────────────────────────────
 function render() {
   updateMovement();
+
+  const word = S.word || ' ';
+
+  // 1. Clear main canvas to black
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. Clear offscreen canvases
+  maskCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  colorCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  maskCtx.clearRect(0, 0, W, H);
+  colorCtx.clearRect(0, 0, W, H);
+
+  // 3. Draw each spotlight gradient on both masks and color canvases
+  const active = S.spotlights.filter(s => s.active);
+  for (const sl of active) {
+    const px = sl.x * W;
+    const py = sl.y * H;
+    const r = sl.radius;
+    const col = hexToRgb(sl.color);
+
+    const innerStop = Math.max(0, 1 - sl.softness * 0.8);
+
+    const mg = maskCtx.createRadialGradient(px, py, 0, px, py, r);
+    mg.addColorStop(0, 'rgba(255,255,255,1)');
+    mg.addColorStop(innerStop, 'rgba(255,255,255,1)');
+    mg.addColorStop(1, 'rgba(255,255,255,0)');
+    maskCtx.fillStyle = mg;
+    maskCtx.beginPath();
+    maskCtx.arc(px, py, r, 0, Math.PI * 2);
+    maskCtx.fill();
+
+    const cg = colorCtx.createRadialGradient(px, py, 0, px, py, r);
+    cg.addColorStop(0, `rgba(${col.r},${col.g},${col.b},1)`);
+    cg.addColorStop(innerStop, `rgba(${col.r},${col.g},${col.b},1)`);
+    cg.addColorStop(1, `rgba(${col.r},${col.g},${col.b},0)`);
+    colorCtx.fillStyle = cg;
+    colorCtx.beginPath();
+    colorCtx.arc(px, py, r, 0, Math.PI * 2);
+    colorCtx.fill();
+  }
+
+  // 4. Draw the word in white
+  const fontSize = Math.min(H * 0.18, W * 0.08);
+  ctx.font = `bold ${fontSize}px 'Segoe UI', system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const wordX = W / 2;
+  const wordY = H / 2;
+  ctx.fillStyle = '#fff';
+  ctx.fillText(word, wordX, wordY);
+
+  // 5. Clip word to spotlight mask: keep only lit word pixels
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.drawImage(maskCanvas, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 6. Tint visible word with spotlight colors
+  ctx.globalCompositeOperation = 'source-atop';
+  ctx.drawImage(colorCanvas, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+
   requestAnimationFrame(render);
 }
+
+render();
 
 render();
 </script>
