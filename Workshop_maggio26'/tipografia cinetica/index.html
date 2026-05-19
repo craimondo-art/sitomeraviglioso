@@ -187,8 +187,14 @@ function render() {
   maskCtx.clearRect(0, 0, W, H);
   colorCtx.clearRect(0, 0, W, H);
 
-  // 3. Draw each spotlight gradient on both masks and color canvases
   const active = S.spotlights.filter(s => s.active);
+
+  if (active.length === 0) {
+    requestAnimationFrame(render);
+    return;
+  }
+
+  // 3. Draw each spotlight gradient on both masks and color canvases
   for (const sl of active) {
     const px = sl.x * W;
     const py = sl.y * H;
