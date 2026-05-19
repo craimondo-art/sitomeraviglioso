@@ -60,6 +60,51 @@ const S = {
   nextId: 1,
 };
 
+function createSpotlight() {
+  const id = S.nextId++;
+  return {
+    id,
+    active: true,
+    color: '#ffffff',
+    softness: 0.5,
+    speed: 0.5,
+    wander: 0.5,
+    x: Math.random(),
+    y: Math.random(),
+    vx: 0,
+    vy: 0,
+    targetX: Math.random(),
+    targetY: Math.random(),
+    radius: 120,
+  };
+}
+
+function addSpotlight() {
+  const sl = createSpotlight();
+  sl.x = Math.random();
+  sl.y = Math.random();
+  sl.targetX = sl.x;
+  sl.targetY = sl.y;
+  S.spotlights.push(sl);
+  renderPanel();
+}
+
+function removeSpotlight(id) {
+  S.spotlights = S.spotlights.filter(s => s.id !== id);
+  renderPanel();
+}
+
+function toggleSpotlight(id) {
+  const sl = S.spotlights.find(s => s.id === id);
+  if (sl) sl.active = !sl.active;
+  renderPanel();
+}
+
+function updateSpotlight(id, patch) {
+  const sl = S.spotlights.find(s => s.id === id);
+  if (sl) Object.assign(sl, patch);
+}
+
 // ─── Canvas setup ─────────────────────────────────────────────────
 const c = document.getElementById('c');
 const ctx = c.getContext('2d');
