@@ -239,8 +239,117 @@ function render() {
   requestAnimationFrame(render);
 }
 
-render();
+// ─── Control Panel ───────────────────────────────────────────────
+const panel = document.getElementById('panel');
 
+function renderPanel() {
+  panel.innerHTML = '';
+
+  const title = document.createElement('div');
+  title.className = 'panel-title';
+  title.textContent = 'SPOTLIGHT';
+  panel.appendChild(title);
+
+  const f1 = field('Parola', createInput('text', S.word, v => { S.word = v; }));
+  panel.appendChild(f1);
+
+  const sec = document.createElement('div');
+  sec.className = 'section-title';
+  sec.textContent = 'CANALI';
+  panel.appendChild(sec);
+
+  for (const sl of S.spotlights) {
+    panel.appendChild(renderChannel(sl));
+  }
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-btn';
+  addBtn.textContent = '+ Aggiungi spotlight';
+  addBtn.addEventListener('click', addSpotlight);
+  panel.appendChild(addBtn);
+}
+
+function renderChannel(sl) {
+  const ch = document.createElement('div');
+  ch.className = 'channel' + (sl.active ? ' active' : '');
+
+  const hdr = document.createElement('div');
+  hdr.className = 'channel-hdr';
+
+  const tog = document.createElement('button');
+  tog.className = 'tog ' + (sl.active ? 'on' : 'off');
+  tog.textContent = sl.active ? 'ON' : 'OFF';
+  tog.addEventListener('click', () => toggleSpotlight(sl.id));
+  hdr.appendChild(tog);
+
+  const num = document.createElement('span');
+  num.className = 'ch-num';
+  num.textContent = 'Spot ' + sl.id;
+  hdr.appendChild(num);
+
+  const rm = document.createElement('button');
+  rm.className = 'rm';
+  rm.textContent = '✕';
+  rm.addEventListener('click', () => removeSpotlight(sl.id));
+  hdr.appendChild(rm);
+
+  ch.appendChild(hdr);
+
+  ch.appendChild(field('Colore', createColorPicker(sl.color, v => { updateSpotlight(sl.id, { color: v }); renderPanel(); })));
+  ch.appendChild(field('Softness', createSlider(0, 1, 0.01, sl.softness, v => { updateSpotlight(sl.id, { softness: v }); }), sl.softness.toFixed(2)));
+  ch.appendChild(field('Speed', createSlider(0, 1, 0.01, sl.speed, v => { updateSpotlight(sl.id, { speed: v }); }), sl.speed.toFixed(2)));
+  ch.appendChild(field('Wander', createSlider(0, 1, 0.01, sl.wander, v => { updateSpotlight(sl.id, { wander: v }); }), sl.wander.toFixed(2)));
+
+  return ch;
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────
+function field(label, el, extra) {
+  const d = document.createElement('div');
+  d.className = 'field';
+  const sp = document.createElement('span');
+  sp.className = 'label';
+  sp.textContent = label;
+  d.appendChild(sp);
+  d.appendChild(el);
+  if (extra !== undefined) {
+    const v = document.createElement('span');
+    v.className = 'val';
+    v.textContent = extra;
+    d.appendChild(v);
+  }
+  return d;
+}
+
+function createInput(type, val, cb) {
+  const el = document.createElement('input');
+  el.className = 'text-input';
+  el.type = type;
+  el.value = val;
+  el.addEventListener('input', () => cb(el.value));
+  return el;
+}
+
+function createSlider(min, max, step, val, cb) {
+  const el = document.createElement('input');
+  el.type = 'range';
+  el.min = min; el.max = max; el.step = step;
+  el.value = val;
+  el.addEventListener('input', () => cb(Number(el.value)));
+  return el;
+}
+
+function createColorPicker(val, cb) {
+  const el = document.createElement('input');
+  el.type = 'color';
+  el.value = val;
+  el.addEventListener('input', () => cb(el.value));
+  return el;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+addSpotlight();
+renderPanel();
 render();
 </script>
 </body>
