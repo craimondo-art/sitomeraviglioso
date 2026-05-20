@@ -41,8 +41,31 @@ async function init() {
 
 init();
 
-async function setupCamera() {}
+async function setupCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error('Browser does not support webcam access');
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+  });
+  video.srcObject = stream;
+  return new Promise((resolve) => {
+    video.onloadedmetadata = () => { video.play(); resolve(); };
+  });
+}
+
 async function setupDetector() {}
-function resizeCanvases() {}
+function resizeCanvases() {
+  const videoRect = video.getBoundingClientRect();
+  overlay.width = videoRect.width;
+  overlay.height = videoRect.height;
+
+  const starRect = starCanvas.getBoundingClientRect();
+  starCanvas.width = starRect.width;
+  starCanvas.height = starRect.height;
+}
+
+window.addEventListener('resize', resizeCanvases);
+
 function bindConsole() {}
 function mainLoop() {}
