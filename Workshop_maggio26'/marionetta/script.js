@@ -218,5 +218,41 @@ function processHands(hands) {
 
 window.addEventListener('resize', resizeCanvases);
 
-function bindConsole() {}
-function mainLoop() {}
+function bindConsole() {
+  colorInput.addEventListener('input', () => {
+    settings.color = colorInput.value;
+  });
+
+  pointsInput.addEventListener('input', () => {
+    settings.numPoints = parseInt(pointsInput.value);
+    pointsLabel.textContent = settings.numPoints;
+  });
+
+  filledCheck.addEventListener('change', () => {
+    settings.filled = filledCheck.checked;
+    strokeWidthInput.disabled = filledCheck.checked;
+  });
+
+  strokeWidthInput.addEventListener('input', () => {
+    settings.strokeWidth = parseInt(strokeWidthInput.value);
+  });
+}
+
+async function mainLoop() {
+  resizeCanvases();
+  if (detector && videoReady && video.readyState >= 2) {
+    const hands = await detector.estimateHands(video);
+    if (hands.length > 0) {
+      drawKeypoints(hands[0].keypoints);
+      processHands(hands);
+    } else {
+      overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+      if (preview.active) {
+        preview.active = false;
+        renderStars();
+      }
+    }
+  }
+  renderStars();
+  requestAnimationFrame(mainLoop);
+}
