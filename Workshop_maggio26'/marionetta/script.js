@@ -51,7 +51,7 @@ async function setupCamera() {
     throw new Error('Browser does not support webcam access');
   }
   stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } }
   });
   video.srcObject = stream;
   return new Promise((resolve) => {
@@ -141,7 +141,6 @@ function renderStars() {
 function drawKeypoints(kp) {
   const w = overlay.width;
   const h = overlay.height;
-  overlayCtx.clearRect(0, 0, w, h);
 
   overlayCtx.strokeStyle = '#00ff88';
   overlayCtx.lineWidth = 2;
@@ -323,7 +322,10 @@ async function mainLoop() {
   if (detector && videoReady && video.readyState >= 2) {
     const hands = await detector.estimateHands(video);
     if (hands.length > 0) {
-      drawKeypoints(hands[0].keypoints);
+      overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+      for (const hand of hands) {
+        drawKeypoints(hand.keypoints);
+      }
       processHands(hands);
     } else {
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
