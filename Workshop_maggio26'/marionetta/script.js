@@ -176,10 +176,11 @@ function distance2D(a, b) {
 }
 
 function mapToCanvas(midX, midY) {
+  const flippedX = video.videoWidth - midX;
   const scaleX = starCanvas.width / video.videoWidth;
   const scaleY = starCanvas.height / video.videoHeight;
   return {
-    x: Math.max(0, Math.min(starCanvas.width, midX * scaleX)),
+    x: Math.max(0, Math.min(starCanvas.width, flippedX * scaleX)),
     y: Math.max(0, Math.min(starCanvas.height, midY * scaleY))
   };
 }
