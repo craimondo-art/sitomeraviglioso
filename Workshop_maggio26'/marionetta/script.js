@@ -60,7 +60,7 @@ async function setupDetector() {
   const detectorConfig = {
     runtime: 'mediapipe',
     solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands',
-    modelType: 'lite'
+    modelType: 'full'
   };
   detector = await handPoseDetection.createDetector(model, detectorConfig);
 }
