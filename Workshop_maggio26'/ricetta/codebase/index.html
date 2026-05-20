@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ricetta Pancakes</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5e6d0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .container { max-width: 600px; width: 100%; }
+  h1 {
+    text-align: center;
+    font-size: 2rem;
+    color: #3d2b1f;
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+  .people-box {
+    background: #fff;
+    border: 2px solid #d4a574;
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 1.1rem;
+    color: #3d2b1f;
+  }
+  .people-box label { font-weight: 600; }
+  .people-box input {
+    width: 60px;
+    padding: 6px 10px;
+    font-size: 1.1rem;
+    text-align: center;
+    border: 2px solid #d4a574;
+    border-radius: 8px;
+    outline: none;
+    font-weight: 600;
+  }
+  .people-box input:focus { border-color: #b87333; }
+  .scontrino {
+    background: #fff;
+    padding: 28px 24px;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    clip-path: polygon(
+      0% 8px, 8px 0%, 16px 8px, 24px 0%, 32px 8px, 40px 0%, 48px 8px,
+      56px 0%, 64px 8px, 72px 0%, 80px 8px, 88px 0%, 96px 8px,
+      100% 0%, 100% calc(100% - 8px),
+      calc(100% - 8px) 100%, calc(100% - 16px) calc(100% - 8px),
+      calc(100% - 24px) 100%, calc(100% - 32px) calc(100% - 8px),
+      calc(100% - 40px) 100%, calc(100% - 48px) calc(100% - 8px),
+      calc(100% - 56px) 100%, calc(100% - 64px) calc(100% - 8px),
+      calc(100% - 72px) 100%, calc(100% - 80px) calc(100% - 8px),
+      calc(100% - 88px) 100%, calc(100% - 96px) calc(100% - 8px),
+      0% 100%
+    );
+  }
+  .scontrino h2 {
+    font-size: 1.3rem;
+    color: #3d2b1f;
+    margin-bottom: 14px;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 8px;
+  }
+  .ingredienti-list { list-style: none; margin-bottom: 24px; }
+  .ingredienti-list li {
+    padding: 5px 0;
+    font-size: 1rem;
+    color: #444;
+    display: flex;
+    justify-content: space-between;
+  }
+  .ingredienti-list li .nome { font-weight: 500; }
+  .ingredienti-list li .qta { font-weight: 600; color: #3d2b1f; }
+  .steps-list { list-style: none; counter-reset: step; }
+  .steps-list li {
+    counter-increment: step;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .steps-list li:last-child { border-bottom: none; }
+  .steps-list li .step-num {
+    font-weight: 700;
+    color: #b87333;
+    min-width: 24px;
+  }
+  .steps-list li .step-text { flex: 1; color: #444; line-height: 1.4; }
+  .steps-list li .step-time {
+    font-size: 0.85rem;
+    color: #888;
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+  .steps-list li input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: #b87333;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .steps-list li.done .step-text { text-decoration: line-through; color: #aaa; }
+  .steps-list li.done .step-time { color: #bbb; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Ricetta Pancakes</h1>
+  <div class="people-box">
+    <label for="people">Persone:</label>
+    <input type="number" id="people" value="2" min="1" max="20">
+  </div>
+  <div class="scontrino" id="scontrino">
+    <h2>Ingredienti</h2>
+    <ul class="ingredienti-list" id="ingredienti-list"></ul>
+    <h2>Procedimento</h2>
+    <ol class="steps-list" id="steps-list"></ol>
+  </div>
+</div>
+<script>
+const recipeData = {
+  basePeople: 2,
+  ingredients: [
+    { name: 'Farina 00', qta: 125, unit: 'g', scalable: true },
+    { name: 'Latte intero', qta: 200, unit: 'g', scalable: true },
+    { name: 'Burro', qta: 25, unit: 'g', scalable: true },
+    { name: 'Zucchero', qta: 15, unit: 'g', scalable: true },
+    { name: 'Uova medie', qta: 2, unit: '', scalable: true, format: (v) => Math.round(v) },
+    { name: 'Lievito per dolci', qta: 6, unit: 'g', scalable: true },
+    { name: 'Sale fino', qta: 1, unit: 'pizzico', scalable: false },
+    { name: 'Burro per ungere', qta: null, unit: 'q.b.', scalable: false },
+  ],
+  steps: [
+    { text: 'Sciogliere il burro in un pentolino e lasciare intiepidire.', time: '1 min' },
+    { text: 'Separare i tuorli dagli albumi.', time: '2 min' },
+    { text: 'Versare nella ciotola con i tuorli il burro fuso intiepidito e il latte. Mescolare con una frusta.', time: '2 min' },
+    { text: 'Setacciare la farina e il lievito, incorporare le polveri con la frusta, aggiungere il sale e mescolare fino a ottenere un composto omogeneo.', time: '3 min' },
+    { text: 'Montare gli albumi a neve con le fruste elettriche, versando gradualmente lo zucchero.', time: '4 min' },
+    { text: 'Aggiungere gli albumi montati al composto di tuorli e mescolare delicatamente dal basso verso l\'alto.', time: '2 min' },
+    { text: 'Cuocere i pancake in padella antiaderente con poco burro, 2 min per lato, fino a doratura.', time: '12 min' },
+  ]
+};
+
+function renderIngredients(people) {
+  const factor = people / recipeData.basePeople;
+  const list = document.getElementById('ingredienti-list');
+  list.innerHTML = '';
+  recipeData.ingredients.forEach(ing => {
+    const li = document.createElement('li');
+    let qtaStr;
+    if (!ing.scalable) {
+      qtaStr = ing.unit;
+    } else if (ing.format) {
+      qtaStr = ing.format(ing.qta * factor) + ' ' + ing.unit;
+    } else {
+      qtaStr = Math.round(ing.qta * factor) + ' ' + ing.unit;
+    }
+    li.innerHTML = `<span class="nome">${ing.name}</span><span class="qta">${qtaStr}</span>`;
+    list.appendChild(li);
+  });
+}
+
+function renderSteps() {
+  const list = document.getElementById('steps-list');
+  list.innerHTML = '';
+  recipeData.steps.forEach((step, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <input type="checkbox" data-step="${i}">
+      <span class="step-num">${i + 1}.</span>
+      <span class="step-text">${step.text}</span>
+      <span class="step-time">⏱ ${step.time}</span>
+    `;
+    list.appendChild(li);
+  });
+}
+
+document.getElementById('people').addEventListener('input', function () {
+  let val = parseInt(this.value) || 1;
+  if (val < 1) val = 1;
+  if (val > 20) val = 20;
+  renderIngredients(val);
+});
+
+renderIngredients(2);
+renderSteps();
+</script>
+</body>
+</html>
