@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "maschera sonora/2026-05-20-maschera-sonora-design.md",
+                "file": "marionetta/2026-05-20-hand-pose-star-tool-design.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-05-20-maschera-sonora-design"
+              "title": "2026-05-20-hand-pose-star-tool-design"
             }
           }
         ],
@@ -198,8 +198,9 @@
       "bases:Crea nuova Base": false
     }
   },
-  "active": "244e064ffaabb8dc",
+  "active": "3c9e718da5625116",
   "lastOpenFiles": [
+    "maschera sonora/2026-05-20-maschera-sonora-design.md",
     "marionetta/2026-05-20-hand-pose-star-tool-design.md",
     "marionetta/docs/superpowers/specs/2026-05-20-hand-pose-star-tool-design.md",
     "marionetta/docs/superpowers/specs",
@@ -209,7 +210,6 @@
     "maschera sonora/1_parla.svg",
     "maschera sonora/2_silenzio.svg",
     "maschera sonora/svg/1_parla.svg",
-    "maschera sonora/2026-05-20-maschera-sonora-design.md",
     "maschera sonora/flubber.min.js",
     "maschera sonora/script.js",
     "maschera sonora/style.css",
