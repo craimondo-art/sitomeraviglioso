@@ -2,6 +2,7 @@
 
 let detector = null;
 let videoReady = false;
+let stream = null;
 let stars = [];
 let nextId = 0;
 let pinchState = 'OPEN';
@@ -26,6 +27,7 @@ const pointsInput = document.getElementById('star-points');
 const pointsLabel = document.getElementById('points-label');
 const filledCheck = document.getElementById('star-filled');
 const strokeWidthInput = document.getElementById('stroke-width');
+const camToggle = document.getElementById('cam-toggle');
 
 async function init() {
   try {
@@ -46,7 +48,7 @@ async function setupCamera() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     throw new Error('Browser does not support webcam access');
   }
-  const stream = await navigator.mediaDevices.getUserMedia({
+  stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
   });
   video.srcObject = stream;
@@ -261,6 +263,19 @@ function bindConsole() {
 
   strokeWidthInput.addEventListener('input', () => {
     settings.strokeWidth = parseInt(strokeWidthInput.value);
+  });
+
+  camToggle.addEventListener('change', async () => {
+    if (camToggle.checked) {
+      await setupCamera();
+      videoReady = true;
+    } else {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      video.srcObject = null;
+      videoReady = false;
+    }
   });
 }
 
