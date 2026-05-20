@@ -169,7 +169,8 @@ function mapToCanvas(midX, midY) {
 }
 
 function processHands(hands) {
-  if (hands.length === 0) {
+  const rightHand = hands.find(h => h.handedness === 'Right');
+  if (!rightHand) {
     if (preview.active) {
       preview.active = false;
       renderStars();
@@ -177,7 +178,7 @@ function processHands(hands) {
     return;
   }
 
-  const kp = hands[0].keypoints;
+  const kp = rightHand.keypoints;
   const p4 = { x: kp[4].x, y: kp[4].y };
   const p8 = { x: kp[8].x, y: kp[8].y };
   const dist = distance2D(p4, p8);
@@ -243,7 +244,8 @@ async function mainLoop() {
   if (detector && videoReady && video.readyState >= 2) {
     const hands = await detector.estimateHands(video);
     if (hands.length > 0) {
-      drawKeypoints(hands[0].keypoints);
+      const rightHand = hands.find(h => h.handedness === 'Right') || hands[0];
+      drawKeypoints(rightHand.keypoints);
       processHands(hands);
     } else {
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);

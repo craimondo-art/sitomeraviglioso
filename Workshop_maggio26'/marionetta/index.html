@@ -9,10 +9,6 @@
 <body>
   <div id="app">
     <div id="left-panel">
-      <video id="webcam" autoplay playsinline></video>
-      <canvas id="overlay"></canvas>
-    </div>
-    <div id="right-panel">
       <canvas id="star-canvas"></canvas>
       <div id="console">
         <label>Color <input type="color" id="star-color" value="#FFD700"></label>
@@ -20,6 +16,10 @@
         <label><input type="checkbox" id="star-filled" checked> Filled</label>
         <label>Stroke <input type="range" id="stroke-width" min="1" max="20" value="3" disabled></label>
       </div>
+    </div>
+    <div id="right-panel">
+      <video id="webcam" autoplay playsinline></video>
+      <canvas id="overlay"></canvas>
     </div>
   </div>
 
