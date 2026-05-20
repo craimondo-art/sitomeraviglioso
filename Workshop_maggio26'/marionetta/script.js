@@ -5,6 +5,7 @@ let videoReady = false;
 let stars = [];
 let nextId = 0;
 let pinchState = 'OPEN';
+let tipsClosed = false;
 
 const preview = { active: false, x: 0, y: 0, radius: 0 };
 
@@ -168,17 +169,7 @@ function mapToCanvas(midX, midY) {
   };
 }
 
-function processHands(hands) {
-  const leftHand = hands.find(h => h.handedness === 'Left');
-  if (!leftHand) {
-    if (preview.active) {
-      preview.active = false;
-      renderStars();
-    }
-    return;
-  }
-
-  const kp = leftHand.keypoints;
+function processLeftHand(kp) {
   const p4 = { x: kp[4].x, y: kp[4].y };
   const p8 = { x: kp[8].x, y: kp[8].y };
   const dist = distance2D(p4, p8);
@@ -197,6 +188,25 @@ function processHands(hands) {
     preview.radius = dist * 2;
   } else if (pinchState === 'CLOSED' && dist > PINCH_OPEN) {
     pinchState = 'OPEN';
+    preview.active = false;
+  } else if (pinchState === 'CLOSED') {
+    preview.x = pos.x;
+    preview.y = pos.y;
+    preview.radius = dist * 2;
+  }
+}
+
+function checkSaveGesture(kp) {
+  const tipIndices = [4, 8, 12, 16, 20];
+  const tips = tipIndices.map(i => ({ x: kp[i].x, y: kp[i].y }));
+  const cx = tips.reduce((s, t) => s + t.x, 0) / tips.length;
+  const cy = tips.reduce((s, t) => s + t.y, 0) / tips.length;
+  const maxDist = Math.max(...tips.map(t => distance2D(t, { x: cx, y: cy })));
+
+  const SAVE_THRESHOLD = 40;
+
+  if (!tipsClosed && maxDist < SAVE_THRESHOLD) {
+    tipsClosed = true;
     if (preview.active) {
       stars.push({
         id: nextId++,
@@ -209,11 +219,26 @@ function processHands(hands) {
         strokeWidth: settings.strokeWidth
       });
       preview.active = false;
+      pinchState = 'OPEN';
     }
-  } else if (pinchState === 'CLOSED') {
-    preview.x = pos.x;
-    preview.y = pos.y;
-    preview.radius = dist * 2;
+  } else if (maxDist >= SAVE_THRESHOLD) {
+    tipsClosed = false;
+  }
+}
+
+function processHands(hands) {
+  const leftHand = hands.find(h => h.handedness === 'Left');
+  const rightHand = hands.find(h => h.handedness === 'Right');
+
+  if (leftHand) {
+    processLeftHand(leftHand.keypoints);
+  } else if (preview.active) {
+    preview.active = false;
+    pinchState = 'OPEN';
+  }
+
+  if (rightHand && preview.active) {
+    checkSaveGesture(rightHand.keypoints);
   }
 }
 
@@ -244,8 +269,7 @@ async function mainLoop() {
   if (detector && videoReady && video.readyState >= 2) {
     const hands = await detector.estimateHands(video);
     if (hands.length > 0) {
-      const trackedHand = hands.find(h => h.handedness === 'Left') || hands[0];
-      drawKeypoints(trackedHand.keypoints);
+      drawKeypoints(hands[0].keypoints);
       processHands(hands);
     } else {
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
