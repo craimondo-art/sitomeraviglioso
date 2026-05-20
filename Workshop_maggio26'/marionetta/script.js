@@ -72,6 +72,56 @@ const HAND_CONNECTIONS = [
   [0,17],[17,18],[18,19],[19,20]
 ];
 
+function starVertices(cx, cy, outerR, innerR, numPoints) {
+  const verts = [];
+  const step = Math.PI / numPoints;
+  for (let i = 0; i < numPoints * 2; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const angle = i * step - Math.PI / 2;
+    verts.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
+  }
+  return verts;
+}
+
+function drawStar(ctx, s) {
+  const innerR = s.radius * 0.4;
+  const verts = starVertices(s.x, s.y, s.radius, innerR, s.numPoints);
+  ctx.beginPath();
+  ctx.moveTo(verts[0].x, verts[0].y);
+  for (let i = 1; i < verts.length; i++) {
+    ctx.lineTo(verts[i].x, verts[i].y);
+  }
+  ctx.closePath();
+
+  ctx.strokeStyle = s.color;
+  ctx.lineWidth = s.strokeWidth;
+
+  if (s.filled) {
+    ctx.fillStyle = s.color;
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+}
+
+function renderStars() {
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+
+  for (const s of stars) {
+    drawStar(starCtx, s);
+  }
+
+  if (preview.active) {
+    starCtx.globalAlpha = 0.4;
+    drawStar(starCtx, {
+      x: preview.x, y: preview.y, radius: preview.radius,
+      numPoints: settings.numPoints, color: settings.color,
+      filled: settings.filled, strokeWidth: settings.strokeWidth
+    });
+    starCtx.globalAlpha = 1.0;
+  }
+}
+
 function drawKeypoints(kp) {
   const w = overlay.width;
   const h = overlay.height;
