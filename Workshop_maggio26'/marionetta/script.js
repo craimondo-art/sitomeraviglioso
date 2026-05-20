@@ -105,6 +105,67 @@ function resizeCanvases() {
   starCanvas.height = starRect.height;
 }
 
+function distance2D(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function mapToCanvas(midX, midY) {
+  const scaleX = starCanvas.width / video.videoWidth;
+  const scaleY = starCanvas.height / video.videoHeight;
+  return {
+    x: Math.max(0, Math.min(starCanvas.width, midX * scaleX)),
+    y: Math.max(0, Math.min(starCanvas.height, midY * scaleY))
+  };
+}
+
+function processHands(hands) {
+  if (hands.length === 0) {
+    if (preview.active) {
+      preview.active = false;
+      renderStars();
+    }
+    return;
+  }
+
+  const kp = hands[0].keypoints;
+  const p4 = { x: kp[4].x, y: kp[4].y };
+  const p8 = { x: kp[8].x, y: kp[8].y };
+  const dist = distance2D(p4, p8);
+  const midX = (p4.x + p8.x) / 2;
+  const midY = (p4.y + p8.y) / 2;
+  const pos = mapToCanvas(midX, midY);
+
+  const PINCH_CLOSE = 30;
+  const PINCH_OPEN = 50;
+
+  if (pinchState === 'OPEN' && dist < PINCH_CLOSE) {
+    pinchState = 'CLOSED';
+    preview.active = true;
+    preview.x = pos.x;
+    preview.y = pos.y;
+    preview.radius = dist * 2;
+  } else if (pinchState === 'CLOSED' && dist > PINCH_OPEN) {
+    pinchState = 'OPEN';
+    if (preview.active) {
+      stars.push({
+        id: nextId++,
+        x: preview.x,
+        y: preview.y,
+        radius: preview.radius,
+        color: settings.color,
+        numPoints: settings.numPoints,
+        filled: settings.filled,
+        strokeWidth: settings.strokeWidth
+      });
+      preview.active = false;
+    }
+  } else if (pinchState === 'CLOSED') {
+    preview.x = pos.x;
+    preview.y = pos.y;
+    preview.radius = dist * 2;
+  }
+}
+
 window.addEventListener('resize', resizeCanvases);
 
 function bindConsole() {}
