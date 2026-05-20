@@ -7,6 +7,8 @@ let stars = [];
 let nextId = 0;
 let pinchState = 'OPEN';
 let tipsClosed = false;
+let prevFingertips = null;
+let falling = false;
 
 const preview = { active: false, x: 0, y: 0, radius: 0 };
 
@@ -108,6 +110,17 @@ function drawStar(ctx, s) {
 }
 
 function renderStars() {
+  if (falling) {
+    const speed = 15;
+    for (const s of stars) {
+      s.y += speed;
+    }
+    stars = stars.filter(s => s.y - s.radius < starCanvas.height);
+    if (stars.length === 0) {
+      falling = false;
+    }
+  }
+
   starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
 
   for (const s of stars) {
@@ -196,6 +209,28 @@ function processLeftHand(kp) {
     preview.y = pos.y;
     preview.radius = dist * 2;
   }
+
+  checkSwipeDown(kp);
+}
+
+function checkSwipeDown(kp) {
+  if (falling) return;
+
+  const tips = [4, 8, 12, 16, 20].map(i => ({ x: kp[i].x, y: kp[i].y }));
+
+  if (!prevFingertips) {
+    prevFingertips = tips;
+    return;
+  }
+
+  const allDown = tips.every((t, i) => (t.y - prevFingertips[i].y) > 4);
+  if (allDown && stars.length > 0) {
+    falling = true;
+    prevFingertips = null;
+    return;
+  }
+
+  prevFingertips = tips;
 }
 
 function checkSaveGesture(kp) {
@@ -237,6 +272,8 @@ function processHands(hands) {
   } else if (preview.active) {
     preview.active = false;
     pinchState = 'OPEN';
+  } else {
+    prevFingertips = null;
   }
 
   if (rightHand && preview.active) {
@@ -288,6 +325,7 @@ async function mainLoop() {
       processHands(hands);
     } else {
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+      prevFingertips = null;
       if (preview.active) {
         preview.active = false;
         renderStars();
