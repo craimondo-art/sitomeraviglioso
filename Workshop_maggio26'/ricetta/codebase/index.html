@@ -115,6 +115,19 @@
   }
   .steps-list li.done .step-text { text-decoration: line-through; color: #aaa; }
   .steps-list li.done .step-time { color: #bbb; }
+  @keyframes confetti-fall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    60% { opacity: 1; }
+    100% { transform: translateY(-350px) rotate(720deg); opacity: 0; }
+  }
+  .confetti-piece {
+    position: fixed;
+    width: 8px;
+    height: 12px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 100;
+  }
 </style>
 </head>
 <body>
@@ -185,8 +198,32 @@ function renderSteps() {
       <span class="step-text">${step.text}</span>
       <span class="step-time">⏱ ${step.time}</span>
     `;
+    const cb = li.querySelector('input[type="checkbox"]');
+    cb.addEventListener('change', function () {
+      li.classList.toggle('done', this.checked);
+      if (this.checked) spawnConfetti();
+    });
     list.appendChild(li);
   });
+}
+
+const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff8fab','#c084fc','#fb923c','#67e8f9'];
+
+function spawnConfetti() {
+  const count = 20;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    el.style.background = color;
+    const startX = Math.random() * 300 - 150;
+    el.style.left = `calc(50% + ${startX}px)`;
+    el.style.bottom = '0px';
+    el.style.animation = `confetti-fall ${0.8 + Math.random() * 0.7}s ease-out forwards`;
+    el.style.transform = `rotate(${Math.random() * 360}deg)`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
 }
 
 document.getElementById('people').addEventListener('input', function () {
