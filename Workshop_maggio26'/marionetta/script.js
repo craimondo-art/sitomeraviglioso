@@ -232,15 +232,11 @@ function checkSwipeDown(kp) {
 }
 
 function checkSaveGesture(kp) {
-  const tipIndices = [4, 8, 12, 16, 20];
-  const tips = tipIndices.map(i => ({ x: kp[i].x, y: kp[i].y }));
-  const cx = tips.reduce((s, t) => s + t.x, 0) / tips.length;
-  const cy = tips.reduce((s, t) => s + t.y, 0) / tips.length;
-  const maxDist = Math.max(...tips.map(t => distance2D(t, { x: cx, y: cy })));
+  const p4 = { x: kp[4].x, y: kp[4].y };
+  const p8 = { x: kp[8].x, y: kp[8].y };
+  const dist = distance2D(p4, p8);
 
-  const SAVE_THRESHOLD = 40;
-
-  if (!tipsClosed && maxDist < SAVE_THRESHOLD) {
+  if (!tipsClosed && dist < 30) {
     tipsClosed = true;
     if (preview.active) {
       stars.push({
@@ -256,7 +252,7 @@ function checkSaveGesture(kp) {
       preview.active = false;
       pinchState = 'OPEN';
     }
-  } else if (maxDist >= SAVE_THRESHOLD) {
+  } else if (dist >= 50) {
     tipsClosed = false;
   }
 }
