@@ -52,10 +52,12 @@
     background: #fff;
     padding: 28px 24px;
     position: relative;
+    z-index: 2;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
   }
   .scontrino-wrapper {
     position: relative;
+    z-index: 2;
     overflow: visible;
   }
   .scontrino h2 {
@@ -108,23 +110,29 @@
   .steps-list li.done .step-text { text-decoration: line-through; color: #aaa; }
   .steps-list li.done .step-time { color: #bbb; }
   @keyframes confetti-pop {
-    0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-    30% { opacity: 1; }
-    100% { transform: translate(var(--dx), -550px) rotate(var(--rot)); opacity: 0; }
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    55% { transform: translate(calc(var(--dx) * 0.55), -380px) rotate(calc(var(--rot) * 0.6)); opacity: 0.7; }
+    100% { transform: translate(var(--dx), -750px) rotate(var(--rot)); opacity: 0; }
   }
   .confetti-piece {
     position: fixed;
     pointer-events: none;
-    z-index: 100;
+    z-index: 1;
     border-radius: 2px;
   }
   .confetti-streamer {
     position: fixed;
     pointer-events: none;
-    z-index: 100;
+    z-index: 1;
     width: 3px;
     border-radius: 1px;
     transform-origin: bottom center;
+  }
+  .confetti-tri {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1;
   }
 </style>
 </head>
@@ -210,23 +218,48 @@ function renderSteps() {
 const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff8fab','#c084fc','#fb923c','#67e8f9'];
 
 function spawnConfetti() {
-  const scontrinoRect = document.getElementById('scontrino-wrapper').getBoundingClientRect();
-  const originY = scontrinoRect.bottom - 10;
-  const originLeft = scontrinoRect.left;
-  const originRight = scontrinoRect.right;
-  const originWidth = originRight - originLeft;
+  const rect = document.getElementById('scontrino-wrapper').getBoundingClientRect();
+  const originY = rect.bottom + 15;
+  const originLeft = rect.left;
+  const originWidth = rect.width;
 
-  for (let i = 0; i < 40; i++) {
-    const isStreamer = i % 4 === 0;
-    const el = document.createElement('div');
-    el.className = isStreamer ? 'confetti-streamer' : 'confetti-piece';
+  for (let i = 0; i < 60; i++) {
+    const typeRoll = Math.random();
+    const isStreamer = typeRoll < 0.15;
+    const isTri = typeRoll >= 0.15 && typeRoll < 0.35;
+    let el, cls;
+
+    if (isStreamer) {
+      el = document.createElement('div');
+      el.className = 'confetti-streamer';
+      el.style.height = (15 + Math.random() * 25) + 'px';
+      el.style.width = '3px';
+    } else if (isTri) {
+      el = document.createElement('div');
+      el.className = 'confetti-tri';
+      const s = 8 + Math.random() * 10;
+      el.style.width = '0';
+      el.style.height = '0';
+      el.style.borderLeft = s/2 + 'px solid transparent';
+      el.style.borderRight = s/2 + 'px solid transparent';
+      el.style.borderBottom = s + 'px solid';
+    } else {
+      el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.width = (5 + Math.random() * 10) + 'px';
+      el.style.height = (7 + Math.random() * 15) + 'px';
+    }
 
     const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-    el.style.background = color;
+    if (!isTri) {
+      el.style.background = color;
+    } else {
+      el.style.borderBottomColor = color;
+    }
 
     const startX = originLeft + Math.random() * originWidth;
-    const dx = (Math.random() - 0.5) * 300;
-    const dur = 1 + Math.random() * 1;
+    const dx = (Math.random() - 0.5) * 360;
+    const dur = 1.5 + Math.random() * 1.2;
     const rot = 360 + Math.random() * 720;
 
     el.style.left = startX + 'px';
@@ -234,15 +267,7 @@ function spawnConfetti() {
     el.style.setProperty('--dx', dx + 'px');
     el.style.setProperty('--rot', rot + 'deg');
     el.style.animation = `confetti-pop ${dur}s ease-out forwards`;
-    el.style.animationDelay = (Math.random() * 0.3) + 's';
-
-    if (isStreamer) {
-      el.style.height = (15 + Math.random() * 25) + 'px';
-      el.style.width = '3px';
-    } else {
-      el.style.width = (5 + Math.random() * 10) + 'px';
-      el.style.height = (7 + Math.random() * 15) + 'px';
-    }
+    el.style.animationDelay = (Math.random() * 0.4) + 's';
 
     document.body.appendChild(el);
     el.addEventListener('animationend', () => el.remove());
