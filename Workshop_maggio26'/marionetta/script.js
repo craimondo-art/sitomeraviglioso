@@ -209,8 +209,6 @@ function processLeftHand(kp) {
     preview.y = pos.y;
     preview.radius = dist * 2;
   }
-
-  checkSwipeDown(kp);
 }
 
 function checkSwipeDown(kp) {
@@ -272,12 +270,15 @@ function processHands(hands) {
   } else if (preview.active) {
     preview.active = false;
     pinchState = 'OPEN';
-  } else {
-    prevFingertips = null;
   }
 
-  if (rightHand && preview.active) {
-    checkSaveGesture(rightHand.keypoints);
+  if (rightHand) {
+    checkSwipeDown(rightHand.keypoints);
+    if (preview.active) {
+      checkSaveGesture(rightHand.keypoints);
+    }
+  } else {
+    prevFingertips = null;
   }
 }
 
