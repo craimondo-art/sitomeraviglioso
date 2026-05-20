@@ -53,18 +53,10 @@
     padding: 28px 24px;
     position: relative;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    clip-path: polygon(
-      0% 8px, 8px 0%, 16px 8px, 24px 0%, 32px 8px, 40px 0%, 48px 8px,
-      56px 0%, 64px 8px, 72px 0%, 80px 8px, 88px 0%, 96px 8px,
-      100% 0%, 100% calc(100% - 8px),
-      calc(100% - 8px) 100%, calc(100% - 16px) calc(100% - 8px),
-      calc(100% - 24px) 100%, calc(100% - 32px) calc(100% - 8px),
-      calc(100% - 40px) 100%, calc(100% - 48px) calc(100% - 8px),
-      calc(100% - 56px) 100%, calc(100% - 64px) calc(100% - 8px),
-      calc(100% - 72px) 100%, calc(100% - 80px) calc(100% - 8px),
-      calc(100% - 88px) 100%, calc(100% - 96px) calc(100% - 8px),
-      0% 100%
-    );
+  }
+  .scontrino-wrapper {
+    position: relative;
+    overflow: visible;
   }
   .scontrino h2 {
     font-size: 1.3rem;
@@ -115,18 +107,24 @@
   }
   .steps-list li.done .step-text { text-decoration: line-through; color: #aaa; }
   .steps-list li.done .step-time { color: #bbb; }
-  @keyframes confetti-fall {
-    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-    60% { opacity: 1; }
-    100% { transform: translateY(-350px) rotate(720deg); opacity: 0; }
+  @keyframes confetti-pop {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+    30% { opacity: 1; }
+    100% { transform: translate(var(--dx), -550px) rotate(var(--rot)); opacity: 0; }
   }
   .confetti-piece {
     position: fixed;
-    width: 8px;
-    height: 12px;
-    border-radius: 2px;
     pointer-events: none;
     z-index: 100;
+    border-radius: 2px;
+  }
+  .confetti-streamer {
+    position: fixed;
+    pointer-events: none;
+    z-index: 100;
+    width: 3px;
+    border-radius: 1px;
+    transform-origin: bottom center;
   }
 </style>
 </head>
@@ -137,11 +135,13 @@
     <label for="people">Persone:</label>
     <input type="number" id="people" value="2" min="1" max="20">
   </div>
-  <div class="scontrino" id="scontrino">
-    <h2>Ingredienti</h2>
-    <ul class="ingredienti-list" id="ingredienti-list"></ul>
-    <h2>Procedimento</h2>
-    <ol class="steps-list" id="steps-list"></ol>
+  <div class="scontrino-wrapper" id="scontrino-wrapper">
+    <div class="scontrino" id="scontrino">
+      <h2>Ingredienti</h2>
+      <ul class="ingredienti-list" id="ingredienti-list"></ul>
+      <h2>Procedimento</h2>
+      <ol class="steps-list" id="steps-list"></ol>
+    </div>
   </div>
 </div>
 <script>
@@ -210,20 +210,71 @@ function renderSteps() {
 const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff8fab','#c084fc','#fb923c','#67e8f9'];
 
 function spawnConfetti() {
-  const count = 20;
-  for (let i = 0; i < count; i++) {
+  const scontrinoRect = document.getElementById('scontrino-wrapper').getBoundingClientRect();
+  const originY = scontrinoRect.bottom - 10;
+  const originLeft = scontrinoRect.left;
+  const originRight = scontrinoRect.right;
+  const originWidth = originRight - originLeft;
+
+  for (let i = 0; i < 40; i++) {
+    const isStreamer = i % 4 === 0;
     const el = document.createElement('div');
-    el.className = 'confetti-piece';
+    el.className = isStreamer ? 'confetti-streamer' : 'confetti-piece';
+
     const color = COLORS[Math.floor(Math.random() * COLORS.length)];
     el.style.background = color;
-    const startX = Math.random() * 300 - 150;
-    el.style.left = `calc(50% + ${startX}px)`;
-    el.style.bottom = '0px';
-    el.style.animation = `confetti-fall ${0.8 + Math.random() * 0.7}s ease-out forwards`;
-    el.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+    const startX = originLeft + Math.random() * originWidth;
+    const dx = (Math.random() - 0.5) * 300;
+    const dur = 1 + Math.random() * 1;
+    const rot = 360 + Math.random() * 720;
+
+    el.style.left = startX + 'px';
+    el.style.top = originY + 'px';
+    el.style.setProperty('--dx', dx + 'px');
+    el.style.setProperty('--rot', rot + 'deg');
+    el.style.animation = `confetti-pop ${dur}s ease-out forwards`;
+    el.style.animationDelay = (Math.random() * 0.3) + 's';
+
+    if (isStreamer) {
+      el.style.height = (15 + Math.random() * 25) + 'px';
+      el.style.width = '3px';
+    } else {
+      el.style.width = (5 + Math.random() * 10) + 'px';
+      el.style.height = (7 + Math.random() * 15) + 'px';
+    }
+
     document.body.appendChild(el);
     el.addEventListener('animationend', () => el.remove());
   }
+}
+
+function applyZigzagClip() {
+  const el = document.getElementById('scontrino');
+  if (!el) return;
+  const w = el.offsetWidth;
+  if (!w) return;
+  const toothW = 16;
+  const toothH = 10;
+  const count = Math.round(w / toothW);
+  const actualTW = w / count;
+  let pts = [];
+  for (let i = 0; i < count; i++) {
+    const x1 = (i * actualTW / w) * 100;
+    const x2 = ((i * actualTW + actualTW / 2) / w) * 100;
+    pts.push(`${x1}% ${toothH}px`);
+    pts.push(`${x2}% 0px`);
+  }
+  pts.push(`100% ${toothH}px`);
+  pts.push(`100% calc(100% - ${toothH}px)`);
+  for (let i = count - 1; i >= 0; i--) {
+    const x1 = ((i + 1) * actualTW / w) * 100;
+    const x2 = ((i * actualTW + actualTW / 2) / w) * 100;
+    pts.push(`${x1}% calc(100% - ${toothH}px)`);
+    pts.push(`${x2}% 100%`);
+  }
+  pts.push(`0% calc(100% - ${toothH}px)`);
+  el.style.clipPath = `polygon(${pts.join(',')})`;
 }
 
 document.getElementById('people').addEventListener('input', function () {
@@ -235,6 +286,9 @@ document.getElementById('people').addEventListener('input', function () {
 
 renderIngredients(2);
 renderSteps();
+applyZigzagClip();
+const ro = new ResizeObserver(() => applyZigzagClip());
+ro.observe(document.getElementById('scontrino'));
 </script>
 </body>
 </html>
