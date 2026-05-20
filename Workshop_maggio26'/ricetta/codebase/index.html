@@ -172,14 +172,18 @@ const recipeData = {
     { name: 'Burro per ungere', qta: null, unit: 'q.b.', scalable: false },
   ],
   steps: [
-    { text: 'Sciogliere il burro in un pentolino e lasciare intiepidire.', time: '1 min' },
-    { text: 'Separare i tuorli dagli albumi.', time: '2 min' },
-    { text: 'Versare nella ciotola con i tuorli il burro fuso intiepidito e il latte. Mescolare con una frusta.', time: '2 min' },
-    { text: 'Setacciare la farina e il lievito, incorporare le polveri con la frusta, aggiungere il sale e mescolare fino a ottenere un composto omogeneo.', time: '3 min' },
-    { text: 'Montare gli albumi a neve con le fruste elettriche, versando gradualmente lo zucchero.', time: '4 min' },
-    { text: 'Aggiungere gli albumi montati al composto di tuorli e mescolare delicatamente dal basso verso l\'alto.', time: '2 min' },
-    { text: 'Cuocere i pancake in padella antiaderente con poco burro, 2 min per lato, fino a doratura.', time: '12 min' },
-  ]
+    { text: 'Sciogliere il burro in un pentolino e lasciare intiepidire.', base: 1, scale: false },
+    { text: 'Separare i tuorli dagli albumi.', base: 2, scale: false },
+    { text: 'Versare nella ciotola con i tuorli il burro fuso intiepidito e il latte. Mescolare con una frusta.', base: 2, scale: false },
+    { text: 'Setacciare la farina e il lievito, incorporare le polveri con la frusta, aggiungere il sale e mescolare fino a ottenere un composto omogeneo.', base: 3, scale: false },
+    { text: 'Montare gli albumi a neve con le fruste elettriche, versando gradualmente lo zucchero.', base: 4, scale: true },
+    { text: 'Aggiungere gli albumi montati al composto di tuorli e mescolare delicatamente dal basso verso l\'alto.', base: 2, scale: false },
+    { text: 'Cuocere i pancake in padella antiaderente con poco burro, 2 min per lato, fino a doratura.', base: 12, scale: true },
+  ],
+  stepTime(step, people) {
+    if (!step.scale) return step.base + ' min';
+    return Math.round(step.base * people / 2) + ' min';
+  }
 };
 
 function renderIngredients(people) {
@@ -201,16 +205,21 @@ function renderIngredients(people) {
   });
 }
 
+function getPeople() {
+  return parseInt(document.getElementById('people').value) || 2;
+}
+
 function renderSteps() {
   const list = document.getElementById('steps-list');
   list.innerHTML = '';
+  const people = getPeople();
   recipeData.steps.forEach((step, i) => {
     const li = document.createElement('li');
     li.innerHTML = `
       <input type="checkbox" data-step="${i}">
       <span class="step-num">${i + 1}.</span>
       <span class="step-text">${step.text}</span>
-      <span class="step-time">⏱ ${step.time}</span>
+      <span class="step-time">⏱ ${recipeData.stepTime(step, people)}</span>
     `;
     const cb = li.querySelector('input[type="checkbox"]');
     cb.addEventListener('change', function () {
@@ -218,6 +227,12 @@ function renderSteps() {
       if (this.checked) spawnConfetti();
     });
     list.appendChild(li);
+  });
+}
+
+function updateStepTimes(people) {
+  document.querySelectorAll('.step-time').forEach((el, i) => {
+    el.textContent = '⏱ ' + recipeData.stepTime(recipeData.steps[i], people);
   });
 }
 
@@ -317,6 +332,7 @@ document.getElementById('people').addEventListener('input', function () {
   if (val < 1) val = 1;
   if (val > 20) val = 20;
   renderIngredients(val);
+  updateStepTimes(val);
 });
 
 renderIngredients(2);
