@@ -13,7 +13,8 @@ let falling = false;
 const preview = { active: false, x: 0, y: 0, radius: 0 };
 
 const settings = {
-  color: '#FFD700',
+  color: '#e82e89',
+  bgColor: '#000000',
   numPoints: 5,
   filled: true,
   strokeWidth: 3
@@ -25,6 +26,10 @@ const overlayCtx = overlay.getContext('2d');
 const starCanvas = document.getElementById('star-canvas');
 const starCtx = starCanvas.getContext('2d');
 const colorInput = document.getElementById('star-color');
+const starCircle = document.getElementById('star-circle');
+const bgInput = document.getElementById('bg-color');
+const bgCircle = document.getElementById('bg-circle');
+const mainArea = document.getElementById('main-area');
 const pointsInput = document.getElementById('star-points');
 const pointsLabel = document.getElementById('points-label');
 const filledCheck = document.getElementById('star-filled');
@@ -121,7 +126,8 @@ function renderStars() {
     }
   }
 
-  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  starCtx.fillStyle = settings.bgColor;
+  starCtx.fillRect(0, 0, starCanvas.width, starCanvas.height);
 
   for (const s of stars) {
     drawStar(starCtx, s);
@@ -281,8 +287,19 @@ function processHands(hands) {
 window.addEventListener('resize', resizeCanvases);
 
 function bindConsole() {
+  starCircle.style.background = settings.color;
+  bgCircle.style.background = settings.bgColor;
+  mainArea.style.background = settings.bgColor;
+
   colorInput.addEventListener('input', () => {
     settings.color = colorInput.value;
+    starCircle.style.background = settings.color;
+  });
+
+  bgInput.addEventListener('input', () => {
+    settings.bgColor = bgInput.value;
+    bgCircle.style.background = settings.bgColor;
+    mainArea.style.background = settings.bgColor;
   });
 
   pointsInput.addEventListener('input', () => {
