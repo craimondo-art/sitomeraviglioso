@@ -8,31 +8,31 @@ const projects = [
     title: 'Tipografia Cinetica',
     tags: ['cinetico', 'generativo', 'canvas'],
     url: 'tipografia cinetica /index.html',
-    thumbnail: 'thumbnails/tipografia-cinetica.svg'
+    thumbnail: 'SPOTLIGHT.jpg'
   },
   {
     title: 'Texture',
     tags: ['generativo', 'texture', 'svg'],
     url: 'texture/index.html',
-    thumbnail: 'thumbnails/texture.svg'
+    thumbnail: 'texture.png'
   },
   {
     title: 'Marionetta',
     tags: ['interattivo', 'hand-tracking', 'AI'],
     url: 'marionetta/index.html',
-    thumbnail: 'thumbnails/marionetta.svg'
+    thumbnail: 'marionetta.png'
   },
   {
     title: 'Maschera Sonora',
     tags: ['audio', 'reattivo', 'svg'],
     url: 'maschera sonora/index.html',
-    thumbnail: 'thumbnails/maschera-sonora.svg'
+    thumbnail: 'maschera sonora.png'
   },
   {
     title: 'Ricetta Pancakes',
     tags: ['utility', 'ricetta', 'interattivo'],
     url: 'ricetta/codebase/index.html',
-    thumbnail: 'thumbnails/ricetta.svg'
+    thumbnail: 'ricetta.png'
   }
 ];
 
