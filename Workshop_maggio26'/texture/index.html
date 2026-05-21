@@ -182,6 +182,19 @@
       render();
     });
 
+    // --- Stroke control ---
+    const strokePicker = document.getElementById('strokePicker');
+    const strokeCircle = document.getElementById('strokeCircle');
+    const btnStroke = document.getElementById('btnStroke');
+
+    btnStroke.addEventListener('click', () => strokePicker.click());
+
+    strokePicker.addEventListener('input', (e) => {
+      state.stroke = e.target.value;
+      strokeCircle.style.background = state.stroke;
+      render();
+    });
+
     window.addEventListener('resize', () => {
       resizeCanvas();
       render();
