@@ -117,9 +117,9 @@
       <input type="range" id="scaleSlider" min="0.25" max="3" step="0.1" value="1">
     </div>
 
-    <div class="btn btn-range" id="btnNoise">
-      <span class="range-value" id="noiseLabel">0</span>
-      <input type="range" id="noiseSlider" min="0" max="100" step="1" value="0">
+    <div class="btn btn-range" id="btnAnim">
+      <span class="range-value" id="animLabel">0</span>
+      <input type="range" id="animSlider" min="0" max="100" step="1" value="0">
     </div>
   </div>
 
@@ -145,7 +145,7 @@
       fill: '#cccccc',
       stroke: '#1d1d1b',
       scale: 1,
-      noise: 0
+      anim: 0
     };
 
     const canvas = document.getElementById('textureCanvas');
@@ -153,53 +153,18 @@
     const offscreen = document.createElement('canvas');
     const offCtx = offscreen.getContext('2d');
 
-    // --- Perlin Noise ---
-    class PerlinNoise {
-      constructor() {
-        this.p = [];
-        for (let i = 0; i < 256; i++) this.p[i] = i;
-        for (let i = 255; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [this.p[i], this.p[j]] = [this.p[j], this.p[i]];
-        }
-        this.p = [...this.p, ...this.p];
-      }
-
-      fade(t) {
-        return t * t * t * (t * (t * 6 - 15) + 10);
-      }
-
-      lerp(a, b, t) {
-        return a + t * (b - a);
-      }
-
-      grad(hash, x, y) {
-        const h = hash & 3;
-        const u = h < 2 ? x : y;
-        const v = h < 2 ? y : x;
-        return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
-      }
-
-      noise(x, y) {
-        const X = Math.floor(x) & 255;
-        const Y = Math.floor(y) & 255;
-        const xf = x - Math.floor(x);
-        const yf = y - Math.floor(y);
-        const u = this.fade(xf);
-        const v = this.fade(yf);
-        const aa = this.p[this.p[X] + Y];
-        const ab = this.p[this.p[X] + Y + 1];
-        const ba = this.p[this.p[X + 1] + Y];
-        const bb = this.p[this.p[X + 1] + Y + 1];
-        const x1 = this.lerp(this.grad(aa, xf, yf), this.grad(ba, xf - 1, yf), u);
-        const x2 = this.lerp(this.grad(ab, xf, yf - 1), this.grad(bb, xf - 1, yf - 1), u);
-        return this.lerp(x1, x2, v);
-      }
-    }
-
-    const perlin = new PerlinNoise();
-    let noiseTime = 0;
+    let animTime = 0;
     let animId = null;
+
+    function getVisibleRects(time) {
+      const speed = state.anim / 4000;
+      if (speed === 0) return RECTS;
+      return RECTS.filter((r, i) => {
+        const phase = (i * 0.77 + i * 0.13) % 1;
+        const t = ((time * speed) + phase) % 1;
+        return t < 0.45;
+      });
+    }
 
     function resizeCanvas() {
       const dpr = window.devicePixelRatio || 1;
@@ -207,23 +172,6 @@
       canvas.height = window.innerHeight * dpr;
       canvas.style.width = window.innerWidth + 'px';
       canvas.style.height = window.innerHeight + 'px';
-    }
-
-    function getAnimatedRects(time) {
-      const intensity = state.noise / 100;
-      const displace = intensity * 4;
-      const pulse = intensity * 0.08;
-      return RECTS.map(r => {
-        const nx = perlin.noise(r.x * 0.05 + time * 0.004, r.y * 0.05);
-        const ny = perlin.noise(r.x * 0.05, r.y * 0.05 + time * 0.004);
-        const ns = perlin.noise(r.x * 0.04 + time * 0.002, r.y * 0.04 + 50);
-        return {
-          x: r.x + nx * displace,
-          y: r.y + ny * displace,
-          w: r.w * (1 + ns * pulse),
-          h: r.h * (1 + ns * pulse)
-        };
-      });
     }
 
     function render() {
@@ -236,10 +184,8 @@
 
       offCtx.clearRect(0, 0, tileW, tileH);
 
-      const rects = (state.noise > 0) ? getAnimatedRects(noiseTime) : RECTS;
-
       offCtx.fillStyle = state.fill;
-      rects.forEach(r => {
+      getVisibleRects(animTime).forEach(r => {
         offCtx.fillRect(r.x * s, r.y * s, r.w * s, r.h * s);
       });
 
@@ -258,8 +204,8 @@
     }
 
     function tick() {
-      if (state.noise > 0) {
-        noiseTime++;
+      if (state.anim > 0) {
+        animTime++;
         render();
         animId = requestAnimationFrame(tick);
       } else {
@@ -267,12 +213,12 @@
       }
     }
 
-    function startNoiseAnim() {
+    function startAnim() {
       if (animId) {
         cancelAnimationFrame(animId);
         animId = null;
       }
-      if (state.noise > 0) {
+      if (state.anim > 0) {
         tick();
       }
     }
@@ -301,13 +247,13 @@
       render();
     });
 
-    const noiseSlider = document.getElementById('noiseSlider');
-    const noiseLabel = document.getElementById('noiseLabel');
-    noiseSlider.addEventListener('input', (e) => {
-      state.noise = parseInt(e.target.value);
-      noiseLabel.textContent = state.noise;
-      startNoiseAnim();
-      if (state.noise === 0) render();
+    const animSlider = document.getElementById('animSlider');
+    const animLabel = document.getElementById('animLabel');
+    animSlider.addEventListener('input', (e) => {
+      state.anim = parseInt(e.target.value);
+      animLabel.textContent = state.anim;
+      startAnim();
+      if (state.anim === 0) render();
     });
 
     window.addEventListener('resize', () => {
