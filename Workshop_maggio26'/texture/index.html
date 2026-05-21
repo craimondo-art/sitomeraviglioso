@@ -121,6 +121,9 @@
       <span class="range-value" id="animLabel">0</span>
       <input type="range" id="animSlider" min="0" max="100" step="1" value="0">
     </div>
+
+    <button class="btn" id="btnSVG" style="cursor:pointer;">SVG</button>
+    <button class="btn" id="btnPNG" style="cursor:pointer;">PNG</button>
   </div>
 
   <script>
@@ -254,6 +257,30 @@
       animLabel.textContent = state.anim;
       startAnim();
       if (state.anim === 0) render();
+    });
+
+    function downloadBlob(blob, filename) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    document.getElementById('btnSVG').addEventListener('click', () => {
+      const rects = state.anim > 0 ? getVisibleRects(animTime) : RECTS;
+      let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${TILE_W} ${TILE_H}">\n`;
+      svg += `  <rect x="0" y="0" width="${TILE_W}" height="${TILE_H}" fill="${state.stroke}"/>\n`;
+      rects.forEach(r => {
+        svg += `  <rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${state.fill}"/>\n`;
+      });
+      svg += `</svg>`;
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      downloadBlob(blob, 'texture.svg');
+    });
+
+    document.getElementById('btnPNG').addEventListener('click', () => {
+      canvas.toBlob(blob => downloadBlob(blob, 'texture.png'));
     });
 
     window.addEventListener('resize', () => {
