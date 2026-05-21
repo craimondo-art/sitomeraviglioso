@@ -91,27 +91,8 @@ html, body { height: 100%; overflow: hidden; font-family: 'Roboto Condensed', sa
   border: none; padding: 0;
 }
 
-#star-points, #stroke-width { accent-color: #e82e89; }
-#star-points { width: 80px; background: transparent; height: 4px; }
-#stroke-width { width: 70px; background: transparent; height: 4px; }
-#star-points::-webkit-slider-runnable-track,
-#stroke-width::-webkit-slider-runnable-track {
-  height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px;
-}
-#star-points::-webkit-slider-thumb,
-#stroke-width::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 14px; height: 14px;
-  border-radius: 50%; background: #e82e89; cursor: pointer;
-}
-#star-points::-moz-range-track,
-#stroke-width::-moz-range-track {
-  height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px;
-}
-#star-points::-moz-range-thumb,
-#stroke-width::-moz-range-thumb {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: #e82e89; cursor: pointer; border: none;
-}
+#star-points { width: 80px; accent-color: #e82e89; }
+#stroke-width { width: 70px; accent-color: #e82e89; }
 
 #console input[type="checkbox"] {
   width: 18px; height: 18px;
