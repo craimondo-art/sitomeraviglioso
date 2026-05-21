@@ -117,71 +117,20 @@
       { x: 14.11,y: 20.32, w: 6.21, h: 13.48 }
     ];
 
-    function decomposeRects(rects) {
-      const xs = new Set();
-      const ys = new Set();
-      rects.forEach(r => {
-        xs.add(r.x);
-        xs.add(r.x + r.w);
-        ys.add(r.y);
-        ys.add(r.y + r.h);
-      });
+    const GAP = 1.5;
 
-      const sortedX = [...xs].sort((a, b) => a - b);
-      const sortedY = [...ys].sort((a, b) => a - b);
-
-      const cells = [];
-
-      for (let i = 0; i < sortedX.length - 1; i++) {
-        for (let j = 0; j < sortedY.length - 1; j++) {
-          const cx = sortedX[i];
-          const cy = sortedY[j];
-          const cw = sortedX[i + 1] - cx;
-          const ch = sortedY[j + 1] - cy;
-
-          const covered = rects.some(r =>
-            cx < r.x + r.w && cx + cw > r.x &&
-            cy < r.y + r.h && cy + ch > r.y
-          );
-
-          if (covered) {
-            cells.push({ x: cx, y: cy, w: cw, h: ch });
-          }
-        }
-      }
-
-      return cells;
+    function getGappedRects(rects, gap) {
+      return rects.map(r => {
+        const ix = Math.min(gap, r.w / 3);
+        const iy = Math.min(gap, r.h / 3);
+        return {
+          x: r.x + ix,
+          y: r.y + iy,
+          w: r.w - 2 * ix,
+          h: r.h - 2 * iy
+        };
+      }).filter(r => r.w > 0 && r.h > 0);
     }
-
-    function mergeRects(rects) {
-      const r = [...rects];
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (let i = 0; i < r.length; i++) {
-          for (let j = i + 1; j < r.length; j++) {
-            const a = r[i];
-            const b = r[j];
-            if (a.y === b.y && a.h === b.h && a.x + a.w === b.x) {
-              r[i] = { x: a.x, y: a.y, w: a.w + b.w, h: a.h };
-              r.splice(j, 1);
-              changed = true;
-              break;
-            }
-            if (a.x === b.x && a.w === b.w && a.y + a.h === b.y) {
-              r[i] = { x: a.x, y: a.y, w: a.w, h: a.h + b.h };
-              r.splice(j, 1);
-              changed = true;
-              break;
-            }
-          }
-          if (changed) break;
-        }
-      }
-      return r;
-    }
-
-    const TILE_RECTS = mergeRects(decomposeRects(RAW_RECTS));
 
     const state = {
       fill: '#ffffff',
@@ -203,34 +152,25 @@
     }
 
     function render() {
-      const baseW = SVG_W;
-      const baseH = SVG_H;
-      const scaledW = baseW * state.scale;
-      const scaledH = baseH * state.scale;
+      const scaledW = SVG_W * state.scale;
+      const scaledH = SVG_H * state.scale;
 
       offscreen.width = Math.ceil(scaledW);
       offscreen.height = Math.ceil(scaledH);
 
-      offCtx.fillStyle = state.fill;
-      offCtx.strokeStyle = state.stroke;
-      offCtx.lineWidth = 1;
-
       offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
 
-      TILE_RECTS.forEach(r => {
-        const rx = r.x * state.scale;
-        const ry = r.y * state.scale;
-        const rw = r.w * state.scale;
-        const rh = r.h * state.scale;
-        offCtx.fillRect(rx, ry, rw, rh);
-        offCtx.strokeRect(rx, ry, rw, rh);
+      offCtx.fillStyle = state.fill;
+      getGappedRects(RAW_RECTS, GAP).forEach(r => {
+        offCtx.fillRect(r.x * state.scale, r.y * state.scale, r.w * state.scale, r.h * state.scale);
       });
 
       const w = window.innerWidth;
       const h = window.innerHeight;
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = state.stroke;
+      ctx.fillRect(0, 0, w, h);
 
       for (let y = 0; y < h; y += scaledH) {
         for (let x = 0; x < w; x += scaledW) {
