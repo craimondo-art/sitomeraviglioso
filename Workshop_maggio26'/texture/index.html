@@ -124,6 +124,7 @@
 
     <button class="btn" id="btnSVG" style="cursor:pointer;">SVG</button>
     <button class="btn" id="btnPNG" style="cursor:pointer;">PNG</button>
+    <button class="btn" id="btnRandom" style="cursor:pointer; min-width:80px;">&#x21BB;</button>
   </div>
 
   <script>
@@ -144,11 +145,54 @@
       { x: 26, y: 96, w: 44, h: 2 },
     ];
 
+    const GAP = 3;
+
+    function shuffle(a) {
+      const r = [...a];
+      for (let i = r.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [r[i], r[j]] = [r[j], r[i]];
+      }
+      return r;
+    }
+
+    function generateLayout() {
+      const sizes = shuffle(RECTS.map(r => ({ w: r.w, h: r.h })));
+      const placed = [];
+      for (const s of sizes) {
+        let best = null;
+        let bestScore = -Infinity;
+        for (let attempt = 0; attempt < 200; attempt++) {
+          const x = 2 + Math.random() * Math.max(1, TILE_W - s.w - 4);
+          const y = 2 + Math.random() * Math.max(1, TILE_H - s.h - 4);
+          let minDist = Infinity;
+          for (const p of placed) {
+            const dx = Math.max(0, Math.abs(x - p.x) - (s.w + p.w) / 2);
+            const dy = Math.max(0, Math.abs(y - p.y) - (s.h + p.h) / 2);
+            minDist = Math.min(minDist, Math.sqrt(dx * dx + dy * dy));
+          }
+          const score = placed.length === 0 ? 1 : minDist;
+          if (score > bestScore) {
+            bestScore = score;
+            best = { x, y, w: s.w, h: s.h };
+          }
+        }
+        placed.push(best);
+      }
+      return placed;
+    }
+
+    const LAYOUTS = [RECTS];
+    for (let i = 0; i < 15; i++) {
+      LAYOUTS.push(generateLayout());
+    }
+
     const state = {
       fill: '#cccccc',
       stroke: '#1d1d1b',
       scale: 1,
-      anim: 0
+      anim: 0,
+      layout: 0
     };
 
     const canvas = document.getElementById('textureCanvas');
@@ -159,10 +203,14 @@
     let animTime = 0;
     let animId = null;
 
+    function getCurrentRects() {
+      return LAYOUTS[state.layout];
+    }
+
     function getVisibleRects(time) {
       const speed = state.anim / 4000;
-      if (speed === 0) return RECTS;
-      return RECTS.filter((r, i) => {
+      if (speed === 0) return getCurrentRects();
+      return getCurrentRects().filter((r, i) => {
         const phase = (i * 0.77 + i * 0.13) % 1;
         const t = ((time * speed) + phase) % 1;
         return t < 0.45;
@@ -281,6 +329,11 @@
 
     document.getElementById('btnPNG').addEventListener('click', () => {
       canvas.toBlob(blob => downloadBlob(blob, 'texture.png'));
+    });
+
+    document.getElementById('btnRandom').addEventListener('click', () => {
+      state.layout = (state.layout + 1) % LAYOUTS.length;
+      render();
     });
 
     window.addEventListener('resize', () => {
