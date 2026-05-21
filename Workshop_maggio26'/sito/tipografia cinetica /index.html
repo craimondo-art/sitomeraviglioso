@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spotlight Word Reveal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;500;800&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: #000; color: #ccc; font-family: 'Segoe UI', system-ui, sans-serif; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; color: #ccc; font-family: 'Roboto Condensed', sans-serif; }
 
 .app { display: flex; width: 100%; height: 100vh; }
 .scene-panel { flex: 0 0 800px; width: 800px; height: 800px; }
@@ -20,16 +23,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 
 .field { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 11px; color: #888; }
 .field .label { width: 60px; flex-shrink: 0; }
-.field input[type="range"] { flex: 1; height: 3px; accent-color: #ffd700; }
+.field input[type="range"] { flex: 1; height: 3px; accent-color: #e82e89; }
 .field input[type="color"] { width: 26px; height: 20px; padding: 0; border: 1px solid #333; background: none; cursor: pointer; }
 .text-input { flex: 1; background: #1a1a1a; color: #e0e0e0; border: 1px solid #333; padding: 4px 8px; font-size: 14px; font-family: inherit; }
 .val { width: 32px; text-align: right; font-size: 10px; color: #555; }
 
 .channel { background: #181818; border: 1px solid #222; border-radius: 4px; padding: 6px; margin-bottom: 4px; }
-.channel.active { border-color: #ffd700; }
+.channel.active { border-color: #e82e89; }
 .channel-hdr { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
 .tog { padding: 1px 6px; border-radius: 3px; border: 1px solid; font-size: 9px; font-weight: 600; cursor: pointer; background: none; }
-.tog.on { color: #ffd700; border-color: #ffd700; }
+.tog.on { color: #e82e89; border-color: #e82e89; }
 .tog.off { color: #555; border-color: #333; }
 .ch-num { flex: 1; font-size: 11px; font-weight: 500; color: #999; }
 .rm { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 0 4px; }
@@ -40,7 +43,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
   background: #1a1a1a; color: #888; border: 1px dashed #333;
   padding: 6px; font-size: 11px; cursor: pointer; text-align: center; border-radius: 3px;
 }
-.add-btn:hover { border-color: #ffd700; color: #ffd700; }
+.add-btn:hover { border-color: #e82e89; color: #e82e89; }
 
 canvas { display: block; width: 800px; height: 800px; }
 </style>

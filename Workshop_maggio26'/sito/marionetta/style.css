@@ -1,6 +1,6 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body { height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+html, body { height: 100%; overflow: hidden; font-family: 'Roboto Condensed', sans-serif; }
 
 #app {
   display: flex;
