@@ -195,6 +195,16 @@
       render();
     });
 
+    // --- Scale control ---
+    const scaleSlider = document.getElementById('scaleSlider');
+    const scaleLabel = document.getElementById('scaleLabel');
+
+    scaleSlider.addEventListener('input', (e) => {
+      state.scale = parseFloat(e.target.value);
+      scaleLabel.textContent = state.scale.toFixed(1);
+      render();
+    });
+
     window.addEventListener('resize', () => {
       resizeCanvas();
       render();
