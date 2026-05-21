@@ -43,14 +43,15 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      background: #e82e89;
+      background: #fff;
       border: none;
-      border-radius: 999px;
-      padding: 10px 22px;
+      border-radius: 60px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       font-family: 'Roboto Condensed', sans-serif;
-      font-size: 1rem;
+      font-size: 14px;
       font-weight: 300;
-      color: #ffffff;
+      color: #1d1d1b;
       min-width: 120px;
       justify-content: center;
       overflow: hidden;
@@ -58,13 +59,15 @@
       transition: box-shadow 0.2s ease, background-color 0.2s ease;
     }
 
-    .btn:hover {
-      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.40);
+    .btn-primary {
+      background: #e82e89;
+      color: #ffffff;
+      padding: 10px 22px;
+      font-size: 1rem;
+      border-radius: 999px;
     }
-
-    .btn:active {
-      background-color: #c6287b;
-    }
+    .btn-primary:hover { box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.40); }
+    .btn-primary:active { background-color: #c6287b; }
 
     .btn-color {
       cursor: pointer;
@@ -85,7 +88,7 @@
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      border: 1.5px solid rgba(255,255,255,0.5);
+      border: 1.5px solid #ccc;
       flex-shrink: 0;
       pointer-events: none;
     }
@@ -105,25 +108,25 @@
     }
     .btn-range input[type="range"]::-webkit-slider-runnable-track {
       height: 4px;
-      background: rgba(255,255,255,0.3);
+      background: #ddd;
       border-radius: 2px;
     }
     .btn-range input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 16px; height: 16px;
       border-radius: 50%;
-      background: #fff;
+      background: #e82e89;
       cursor: pointer;
     }
     .btn-range input[type="range"]::-moz-range-track {
       height: 4px;
-      background: rgba(255,255,255,0.3);
+      background: #ddd;
       border-radius: 2px;
     }
     .btn-range input[type="range"]::-moz-range-thumb {
       width: 16px; height: 16px;
       border-radius: 50%;
-      background: #fff;
+      background: #e82e89;
       border: none;
       cursor: pointer;
     }
@@ -132,7 +135,7 @@
       min-width: 28px;
       text-align: center;
       font-size: 0.9rem;
-      color: #ffffff;
+      color: #1d1d1b;
     }
   </style>
 </head>
@@ -162,9 +165,9 @@
       <input type="range" id="animSlider" min="0" max="100" step="1" value="0">
     </div>
 
-    <button class="btn" id="btnSVG">SVG</button>
-    <button class="btn" id="btnPNG">PNG</button>
-    <button class="btn" id="btnRandom" style="min-width:80px;">&#x21BB;</button>
+    <button class="btn btn-primary" id="btnSVG">SVG</button>
+    <button class="btn btn-primary" id="btnPNG">PNG</button>
+    <button class="btn btn-primary" id="btnRandom" style="min-width:80px;">&#x21BB;</button>
   </div>
 
   <script>
