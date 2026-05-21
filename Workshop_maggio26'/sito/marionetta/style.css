@@ -53,38 +53,50 @@ html, body { height: 100%; overflow: hidden; font-family: 'Roboto Condensed', sa
 #console {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  padding: 12px 16px;
-  background: #2a2a3e;
-  border-top: 1px solid #444;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #f5f0f5;
+  border-top: 1px solid #e0d0e0;
   align-items: center;
-  color: #eee;
-  font-size: 14px;
+  justify-content: center;
+  font-weight: 300;
 }
 
 #console label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  background: #fff;
+  border-radius: 60px;
+  padding: 8px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  font-size: 14px;
+  color: #1d1d1b;
+  font-weight: 300;
+  min-height: 40px;
 }
 
 #star-color {
-  width: 36px;
-  height: 36px;
-  border: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid #ccc;
+  border-radius: 50%;
   cursor: pointer;
+  background: none;
 }
 
-#star-points { width: 100px; }
-#stroke-width { width: 80px; }
+#star-points { width: 80px; accent-color: #e82e89; }
+#stroke-width { width: 70px; accent-color: #e82e89; }
 
 #console input[type="checkbox"] {
   width: 18px;
   height: 18px;
   cursor: pointer;
+  accent-color: #e82e89;
 }
 
-#console span { min-width: 20px; text-align: center; }
+#console span { min-width: 20px; text-align: center; font-weight: 500; color: #3d2b1f; }
 
 .error-message {
   color: #ff6b6b;
