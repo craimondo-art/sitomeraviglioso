@@ -36,6 +36,7 @@
     }
 
     .btn {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -44,12 +45,27 @@
       border-radius: 60px;
       padding: 12px 16px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      cursor: pointer;
       font-size: 14px;
       font-weight: 500;
       color: #1d1d1b;
       min-width: 120px;
       justify-content: center;
+      overflow: hidden;
+    }
+
+    .btn-color {
+      cursor: pointer;
+    }
+
+    .btn-color input[type="color"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      border: none;
+      padding: 0;
     }
 
     .btn .color-circle {
@@ -58,16 +74,19 @@
       border-radius: 50%;
       border: 1.5px solid #ccc;
       flex-shrink: 0;
+      pointer-events: none;
     }
 
     .btn-scale {
       min-width: 200px;
       cursor: default;
+      padding: 12px 20px;
     }
 
     .btn-scale input[type="range"] {
       flex: 1;
       min-width: 80px;
+      cursor: pointer;
     }
 
     .btn-scale .scale-value {
@@ -75,27 +94,23 @@
       text-align: center;
       font-size: 13px;
     }
-
-    input[type="color"] {
-      display: none;
-    }
   </style>
 </head>
 <body>
   <canvas id="textureCanvas"></canvas>
 
   <div class="controls" id="controls">
-    <button class="btn" id="btnFill">
+    <div class="btn btn-color" id="btnFill">
       Fill
-      <span class="color-circle" id="fillCircle" style="background: #ffffff;"></span>
-    </button>
-    <input type="color" id="fillPicker" value="#ffffff">
+      <span class="color-circle" id="fillCircle" style="background: #cccccc;"></span>
+      <input type="color" id="fillPicker" value="#cccccc">
+    </div>
 
-    <button class="btn" id="btnStroke">
-      Stroke
+    <div class="btn btn-color" id="btnStroke">
+      Bg
       <span class="color-circle" id="strokeCircle" style="background: #1d1d1b;"></span>
-    </button>
-    <input type="color" id="strokePicker" value="#1d1d1b">
+      <input type="color" id="strokePicker" value="#1d1d1b">
+    </div>
 
     <div class="btn btn-scale" id="btnScale">
       <span class="scale-value" id="scaleLabel">1.0</span>
@@ -104,37 +119,26 @@
   </div>
 
   <script>
-    const SVG_W = 20.82;
-    const SVG_H = 46.92;
+    const TILE_W = 100;
+    const TILE_H = 100;
 
-    const RAW_RECTS = [
-      { x: 0.5,  y: 33.8,  w: 9.61, h: 3.49 },
-      { x: 5.3,  y: 23.31, w: 8.77, h: 10.49 },
-      { x: 9.22, y: 33.8,  w: 9.78, h: 12.63 },
-      { x: 1.62, y: 24.7,  w: 3.65, h: 4.71 },
-      { x: 2.91, y: 12.32, w: 2.39, h: 12.38 },
-      { x: 5.3,  y: 0.5,   w: 8.77, h: 22.81 },
-      { x: 14.11,y: 20.32, w: 6.21, h: 13.48 }
+    const RECTS = [
+      { x: 2,  y: 2,  w: 44, h: 44 },
+      { x: 50, y: 2,  w: 20, h: 54 },
+      { x: 74, y: 2,  w: 24, h: 24 },
+      { x: 2,  y: 50, w: 44, h: 14 },
+      { x: 74, y: 30, w: 24, h: 24 },
+      { x: 50, y: 60, w: 20, h: 20 },
+      { x: 2,  y: 68, w: 20, h: 30 },
+      { x: 26, y: 78, w: 44, h: 14 },
+      { x: 50, y: 84, w: 20, h: 14 },
+      { x: 74, y: 58, w: 24, h: 40 },
+      { x: 26, y: 96, w: 44, h: 2 },
     ];
 
-    const GAP = 1.5;
-
-    function getGappedRects(rects, gap) {
-      return rects.map(r => {
-        const ix = Math.min(gap, r.w / 3);
-        const iy = Math.min(gap, r.h / 3);
-        return {
-          x: r.x + ix,
-          y: r.y + iy,
-          w: r.w - 2 * ix,
-          h: r.h - 2 * iy
-        };
-      }).filter(r => r.w > 0 && r.h > 0);
-    }
-
     const state = {
-      fill: '#ffffff',
-      stroke: '#1d1d1b',
+      fill: '#cccccc',
+      bg: '#1d1d1b',
       scale: 1
     };
 
@@ -152,63 +156,52 @@
     }
 
     function render() {
-      const scaledW = SVG_W * state.scale;
-      const scaledH = SVG_H * state.scale;
+      const s = state.scale;
+      const tileW = Math.ceil(TILE_W * s);
+      const tileH = Math.ceil(TILE_H * s);
 
-      offscreen.width = Math.ceil(scaledW);
-      offscreen.height = Math.ceil(scaledH);
+      offscreen.width = tileW;
+      offscreen.height = tileH;
 
-      offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+      offCtx.clearRect(0, 0, tileW, tileH);
 
       offCtx.fillStyle = state.fill;
-      getGappedRects(RAW_RECTS, GAP).forEach(r => {
-        offCtx.fillRect(r.x * state.scale, r.y * state.scale, r.w * state.scale, r.h * state.scale);
+      RECTS.forEach(r => {
+        offCtx.fillRect(r.x * s, r.y * s, r.w * s, r.h * s);
       });
 
       const w = window.innerWidth;
       const h = window.innerHeight;
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = state.stroke;
+      ctx.fillStyle = state.bg;
       ctx.fillRect(0, 0, w, h);
 
-      for (let y = 0; y < h; y += scaledH) {
-        for (let x = 0; x < w; x += scaledW) {
-          ctx.drawImage(offscreen, x, y, scaledW, scaledH);
+      for (let y = 0; y < h; y += tileH) {
+        for (let x = 0; x < w; x += tileW) {
+          ctx.drawImage(offscreen, x, y, tileW, tileH);
         }
       }
     }
 
-    // --- Fill control ---
     const fillPicker = document.getElementById('fillPicker');
     const fillCircle = document.getElementById('fillCircle');
-    const btnFill = document.getElementById('btnFill');
-
-    btnFill.addEventListener('click', () => fillPicker.click());
-
     fillPicker.addEventListener('input', (e) => {
       state.fill = e.target.value;
       fillCircle.style.background = state.fill;
       render();
     });
 
-    // --- Stroke control ---
     const strokePicker = document.getElementById('strokePicker');
     const strokeCircle = document.getElementById('strokeCircle');
-    const btnStroke = document.getElementById('btnStroke');
-
-    btnStroke.addEventListener('click', () => strokePicker.click());
-
     strokePicker.addEventListener('input', (e) => {
-      state.stroke = e.target.value;
-      strokeCircle.style.background = state.stroke;
+      state.bg = e.target.value;
+      strokeCircle.style.background = state.bg;
       render();
     });
 
-    // --- Scale control ---
     const scaleSlider = document.getElementById('scaleSlider');
     const scaleLabel = document.getElementById('scaleLabel');
-
     scaleSlider.addEventListener('input', (e) => {
       state.scale = parseFloat(e.target.value);
       scaleLabel.textContent = state.scale.toFixed(1);
