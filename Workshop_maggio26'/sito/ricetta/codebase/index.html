@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ricetta Pancakes</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background:
+      repeating-linear-gradient(90deg, rgba(200,50,50,0.40) 0px, rgba(200,50,50,0.40) 22px, transparent 22px, transparent 60px),
+      repeating-linear-gradient(0deg, rgba(200,50,50,0.20) 0px, rgba(200,50,50,0.20) 22px, transparent 22px, transparent 60px),
+      #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .container { max-width: 600px; width: 100%; }
+  h1 {
+    text-align: center;
+    font-size: 2rem;
+    color: #3d2b1f;
+    margin-bottom: 16px;
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(255,255,255,0.9), 0 0 12px rgba(255,255,255,0.6);
+  }
+  .people-box {
+    background: #fff;
+    border: 2px solid #d44;
+    border-radius: 60px;
+    padding: 12px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 1.1rem;
+    color: #3d2b1f;
+  }
+  .people-box input {
+    width: 40px;
+    padding: 2px 4px;
+    font-size: 1.1rem;
+    text-align: center;
+    border: none;
+    border-bottom: 2px solid #d44;
+    outline: none;
+    font-weight: 600;
+    background: transparent;
+  }
+  .people-box input:focus { border-bottom-color: #b33; }
+  .people-box input[type=number]::-webkit-inner-spin-button,
+  .people-box input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .people-box input[type=number] { -moz-appearance: textfield; }
+  .scontrino {
+    background: #fff;
+    padding: 28px 24px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  .scontrino-wrapper {
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+  }
+  .scontrino h2 {
+    font-size: 1.3rem;
+    color: #3d2b1f;
+    margin-bottom: 14px;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 8px;
+  }
+  .ingredienti-list { list-style: none; margin-bottom: 24px; }
+  .ingredienti-list li {
+    padding: 5px 0;
+    font-size: 1rem;
+    color: #444;
+    display: flex;
+    justify-content: space-between;
+  }
+  .ingredienti-list li .nome { font-weight: 500; }
+  .ingredienti-list li .qta { font-weight: 600; color: #3d2b1f; }
+  .steps-list { list-style: none; counter-reset: step; }
+  .steps-list li {
+    counter-increment: step;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .steps-list li:last-child { border-bottom: none; }
+  .steps-list li .step-num {
+    font-weight: 700;
+    color: #b33;
+    min-width: 24px;
+  }
+  .steps-list li .step-text { flex: 1; color: #444; line-height: 1.4; }
+  .steps-list li .step-time {
+    font-size: 0.85rem;
+    color: #888;
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+  .steps-list li input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: #b33;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .steps-list li.done .step-text { text-decoration: line-through; color: #aaa; }
+  .steps-list li.done .step-time { color: #bbb; }
+  @keyframes confetti-pop {
+    0% { offset-distance: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    100% { offset-distance: 100%; opacity: 0; }
+  }
+  @keyframes confetti-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(var(--rot)); }
+  }
+  .confetti-piece {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 2px;
+    offset-rotate: 0deg;
+  }
+  .confetti-streamer {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1;
+    width: 3px;
+    border-radius: 1px;
+    transform-origin: bottom center;
+    offset-rotate: 0deg;
+  }
+  .confetti-tri {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1;
+    offset-rotate: 0deg;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Ricetta per i pancakes</h1>
+  <div class="people-box">
+    <span>per</span>
+    <input type="number" id="people" value="2" min="1" max="20">
+    <span>persone</span>
+  </div>
+  <div class="scontrino-wrapper" id="scontrino-wrapper">
+    <div class="scontrino" id="scontrino">
+      <h2>Ingredienti</h2>
+      <ul class="ingredienti-list" id="ingredienti-list"></ul>
+      <h2>Procedimento</h2>
+      <ol class="steps-list" id="steps-list"></ol>
+    </div>
+  </div>
+</div>
+<script>
+const recipeData = {
+  basePeople: 2,
+  ingredients: [
+    { name: 'Farina 00', qta: 125, unit: 'g', scalable: true },
+    { name: 'Latte intero', qta: 200, unit: 'g', scalable: true },
+    { name: 'Burro', qta: 25, unit: 'g', scalable: true },
+    { name: 'Zucchero', qta: 15, unit: 'g', scalable: true },
+    { name: 'Uova medie', qta: 2, unit: '', scalable: true, format: (v) => Math.round(v) },
+    { name: 'Lievito per dolci', qta: 6, unit: 'g', scalable: true },
+    { name: 'Sale fino', qta: 1, unit: 'pizzico', scalable: false },
+    { name: 'Burro per ungere', qta: null, unit: 'q.b.', scalable: false },
+  ],
+  steps: [
+    { text: 'Sciogliere il burro in un pentolino e lasciare intiepidire.', base: 1, scale: false },
+    { text: 'Separare i tuorli dagli albumi.', base: 2, scale: false },
+    { text: 'Versare nella ciotola con i tuorli il burro fuso intiepidito e il latte. Mescolare con una frusta.', base: 2, scale: false },
+    { text: 'Setacciare la farina e il lievito, incorporare le polveri con la frusta, aggiungere il sale e mescolare fino a ottenere un composto omogeneo.', base: 3, scale: false },
+    { text: 'Montare gli albumi a neve con le fruste elettriche, versando gradualmente lo zucchero.', base: 4, scale: true },
+    { text: 'Aggiungere gli albumi montati al composto di tuorli e mescolare delicatamente dal basso verso l\'alto.', base: 2, scale: false },
+    { text: 'Cuocere i pancake in padella antiaderente con poco burro, 2 min per lato, fino a doratura.', base: 12, scale: true },
+  ],
+  stepTime(step, people) {
+    if (!step.scale) return step.base + ' min';
+    return Math.round(step.base * people / 2) + ' min';
+  }
+};
+
+function renderIngredients(people) {
+  const factor = people / recipeData.basePeople;
+  const list = document.getElementById('ingredienti-list');
+  list.innerHTML = '';
+  recipeData.ingredients.forEach(ing => {
+    const li = document.createElement('li');
+    let qtaStr;
+    if (!ing.scalable) {
+      qtaStr = ing.unit;
+    } else if (ing.format) {
+      qtaStr = ing.format(ing.qta * factor) + ' ' + ing.unit;
+    } else {
+      qtaStr = Math.round(ing.qta * factor) + ' ' + ing.unit;
+    }
+    li.innerHTML = `<span class="nome">${ing.name}</span><span class="qta">${qtaStr}</span>`;
+    list.appendChild(li);
+  });
+}
+
+function getPeople() {
+  return parseInt(document.getElementById('people').value) || 2;
+}
+
+function renderSteps() {
+  const list = document.getElementById('steps-list');
+  list.innerHTML = '';
+  const people = getPeople();
+  recipeData.steps.forEach((step, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <input type="checkbox" data-step="${i}">
+      <span class="step-num">${i + 1}.</span>
+      <span class="step-text">${step.text}</span>
+      <span class="step-time">⏱ ${recipeData.stepTime(step, people)}</span>
+    `;
+    const cb = li.querySelector('input[type="checkbox"]');
+    cb.addEventListener('change', function () {
+      li.classList.toggle('done', this.checked);
+      if (this.checked) spawnConfetti();
+    });
+    list.appendChild(li);
+  });
+}
+
+function updateStepTimes(people) {
+  document.querySelectorAll('.step-time').forEach((el, i) => {
+    el.textContent = '⏱ ' + recipeData.stepTime(recipeData.steps[i], people);
+  });
+}
+
+const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff8fab','#c084fc','#fb923c','#67e8f9'];
+
+function spawnConfetti() {
+  const rect = document.getElementById('scontrino-wrapper').getBoundingClientRect();
+  const originY = rect.bottom - 50;
+  const originLeft = rect.left;
+  const originWidth = rect.width;
+
+  for (let i = 0; i < 200; i++) {
+    const typeRoll = Math.random();
+    const isStreamer = typeRoll < 0.15;
+    const isTri = typeRoll >= 0.15 && typeRoll < 0.35;
+    let el, cls;
+
+    if (isStreamer) {
+      el = document.createElement('div');
+      el.className = 'confetti-streamer';
+      el.style.height = (15 + Math.random() * 25) + 'px';
+      el.style.width = '3px';
+    } else if (isTri) {
+      el = document.createElement('div');
+      el.className = 'confetti-tri';
+      const s = 8 + Math.random() * 10;
+      el.style.width = '0';
+      el.style.height = '0';
+      el.style.borderLeft = s/2 + 'px solid transparent';
+      el.style.borderRight = s/2 + 'px solid transparent';
+      el.style.borderBottom = s + 'px solid';
+    } else {
+      el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.width = (5 + Math.random() * 10) + 'px';
+      el.style.height = (7 + Math.random() * 15) + 'px';
+    }
+
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    if (!isTri) {
+      el.style.background = color;
+    } else {
+      el.style.borderBottomColor = color;
+    }
+
+    const startX = originLeft + Math.random() * originWidth;
+    const dx = (Math.random() - 0.5) * 800;
+    const cx = dx * 1.2;
+    const cy = -250;
+    const dur = 1.5 + Math.random() * 1.2;
+    const rot = 360 + Math.random() * 720;
+
+    el.style.left = startX + 'px';
+    el.style.top = originY + 'px';
+    el.style.offsetPath = `path('M 0,0 Q ${cx},${cy} ${dx},-750')`;
+    el.style.setProperty('--rot', rot + 'deg');
+    el.style.animation = `confetti-pop ${dur}s linear forwards, confetti-spin ${dur}s linear forwards`;
+    el.style.animationDelay = (Math.random() * 0.5) + 's';
+
+    document.body.appendChild(el);
+    el.addEventListener('animationend', (e) => {
+      if (e.animationName === 'confetti-pop') el.remove();
+    });
+  }
+}
+
+function applyZigzagClip() {
+  const el = document.getElementById('scontrino');
+  if (!el) return;
+  const w = el.offsetWidth;
+  if (!w) return;
+  const toothW = 16;
+  const toothH = 10;
+  const count = Math.round(w / toothW);
+  const actualTW = w / count;
+  let pts = [];
+  for (let i = 0; i < count; i++) {
+    const x1 = (i * actualTW / w) * 100;
+    const x2 = ((i * actualTW + actualTW / 2) / w) * 100;
+    pts.push(`${x1}% ${toothH}px`);
+    pts.push(`${x2}% 0px`);
+  }
+  pts.push(`100% ${toothH}px`);
+  pts.push(`100% calc(100% - ${toothH}px)`);
+  for (let i = count - 1; i >= 0; i--) {
+    const x1 = ((i + 1) * actualTW / w) * 100;
+    const x2 = ((i * actualTW + actualTW / 2) / w) * 100;
+    pts.push(`${x1}% calc(100% - ${toothH}px)`);
+    pts.push(`${x2}% 100%`);
+  }
+  pts.push(`0% calc(100% - ${toothH}px)`);
+  el.style.clipPath = `polygon(${pts.join(',')})`;
+}
+
+document.getElementById('people').addEventListener('input', function () {
+  let val = parseInt(this.value) || 1;
+  if (val < 1) val = 1;
+  if (val > 20) val = 20;
+  renderIngredients(val);
+  updateStepTimes(val);
+});
+
+renderIngredients(2);
+renderSteps();
+applyZigzagClip();
+const ro = new ResizeObserver(() => applyZigzagClip());
+ro.observe(document.getElementById('scontrino'));
+</script>
+</body>
+</html>

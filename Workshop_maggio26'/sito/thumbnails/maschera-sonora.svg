@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#1a0a0a"/>
+  <ellipse cx="400" cy="240" rx="160" ry="180" fill="#e82e89" opacity="0.15"/>
+  <path d="M260 120 C260 60, 540 60, 540 120 L560 280 C560 340, 520 400, 400 400 C280 400, 240 340, 240 280 Z" fill="#2a1010" stroke="#e82e89" stroke-width="2"/>
+  <ellipse cx="330" cy="220" rx="35" ry="25" fill="#0a0a0a" stroke="#e82e89" stroke-width="2"/>
+  <ellipse cx="470" cy="220" rx="35" ry="25" fill="#0a0a0a" stroke="#e82e89" stroke-width="2"/>
+  <ellipse cx="400" cy="320" rx="40" ry="25" fill="#0a0a0a" stroke="#e82e89" stroke-width="2"/>
+  <path d="M290 180 C310 160, 350 165, 370 180" stroke="#e82e89" stroke-width="2" fill="none"/>
+  <path d="M430 180 C450 165, 490 160, 510 180" stroke="#e82e89" stroke-width="2" fill="none"/>
+  <path d="M190 220 C170 200, 170 260, 190 240" stroke="#ffabe5" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M170 200 C140 170, 140 290, 170 260" stroke="#ffabe5" stroke-width="2" fill="none" opacity="0.3"/>
+  <path d="M610 220 C630 200, 630 260, 610 240" stroke="#ffabe5" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M630 200 C660 170, 660 290, 630 260" stroke="#ffabe5" stroke-width="2" fill="none" opacity="0.3"/>
+  <polygon points="400,420 370,400 370,440" fill="#ffabe5" opacity="0.6"/>
+  <polygon points="400,420 430,400 430,440" fill="#ffabe5" opacity="0.6"/>
+  <circle cx="400" cy="420" r="6" fill="#e82e89"/>
+</svg>

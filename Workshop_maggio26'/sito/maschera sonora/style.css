@@ -1,0 +1,157 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+}
+
+#container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+}
+
+#mask {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: translateY(-30px);
+}
+
+#controls {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 16px;
+  background: #fff;
+  border: none;
+  border-radius: 60px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.pill-label {
+  color: #1d1d1b;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+#pill-soglia {
+  min-width: 220px;
+}
+
+#pill-mic {
+  min-width: 160px;
+}
+
+#soglia {
+  flex: 1;
+  min-width: 60px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  outline: none;
+}
+
+#soglia::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e82e89;
+  cursor: pointer;
+}
+
+#soglia::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e82e89;
+  cursor: pointer;
+  border: none;
+}
+
+#soglia-value {
+  color: #1d1d1b;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 32px;
+  text-align: center;
+}
+
+#volume-bar-container {
+  width: 80px;
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#volume-bar {
+  height: 100%;
+  width: 0%;
+  background: #e82e89;
+  border-radius: 3px;
+  transition: width 0.05s linear;
+}
+
+#mic-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  outline: none;
+  background: #ffabe5;
+  color: #1d1d1b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  margin-left: auto;
+  transition: background 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#mic-btn:hover {
+  background: #f08cd4;
+}
+
+#mic-btn.active {
+  background: #e82e89;
+  color: #fff;
+}
+
+#mic-btn.active:hover {
+  background: #c01e6e;
+}

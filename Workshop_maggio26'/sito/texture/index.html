@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Texture Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #fff;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .controls {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      border: none;
+      border-radius: 60px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      font-size: 14px;
+      font-weight: 500;
+      color: #1d1d1b;
+      min-width: 120px;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .btn-color {
+      cursor: pointer;
+    }
+
+    .btn-color input[type="color"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      border: none;
+      padding: 0;
+    }
+
+    .btn .color-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid #ccc;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+
+    .btn-range {
+      min-width: 200px;
+      cursor: default;
+      padding: 12px 20px;
+    }
+
+    .btn-range input[type="range"] {
+      flex: 1;
+      min-width: 60px;
+      cursor: pointer;
+    }
+
+    .btn-range .range-value {
+      min-width: 28px;
+      text-align: center;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="textureCanvas"></canvas>
+
+  <div class="controls" id="controls">
+    <div class="btn btn-color" id="btnFill">
+      Fill
+      <span class="color-circle" id="fillCircle" style="background: #cccccc;"></span>
+      <input type="color" id="fillPicker" value="#cccccc">
+    </div>
+
+    <div class="btn btn-color" id="btnStroke">
+      Stroke
+      <span class="color-circle" id="strokeCircle" style="background: #1d1d1b;"></span>
+      <input type="color" id="strokePicker" value="#1d1d1b">
+    </div>
+
+    <div class="btn btn-range" id="btnScale">
+      <span class="range-value" id="scaleLabel">1.0</span>
+      <input type="range" id="scaleSlider" min="0.25" max="3" step="0.1" value="1">
+    </div>
+
+    <div class="btn btn-range" id="btnAnim">
+      <span class="range-value" id="animLabel">0</span>
+      <input type="range" id="animSlider" min="0" max="100" step="1" value="0">
+    </div>
+
+    <button class="btn" id="btnSVG" style="cursor:pointer;">SVG</button>
+    <button class="btn" id="btnPNG" style="cursor:pointer;">PNG</button>
+    <button class="btn" id="btnRandom" style="cursor:pointer; min-width:80px;">&#x21BB;</button>
+  </div>
+
+  <script>
+    const TILE_W = 100;
+    const TILE_H = 100;
+
+    const RECTS = [
+      { x: 2,  y: 2,  w: 44, h: 44 },
+      { x: 50, y: 2,  w: 20, h: 54 },
+      { x: 74, y: 2,  w: 24, h: 24 },
+      { x: 2,  y: 50, w: 44, h: 14 },
+      { x: 74, y: 30, w: 24, h: 24 },
+      { x: 50, y: 60, w: 20, h: 20 },
+      { x: 2,  y: 68, w: 20, h: 30 },
+      { x: 26, y: 78, w: 44, h: 14 },
+      { x: 50, y: 84, w: 20, h: 14 },
+      { x: 74, y: 58, w: 24, h: 40 },
+      { x: 26, y: 96, w: 44, h: 2 },
+    ];
+
+    const GAP = 3;
+
+    function shuffle(a) {
+      const r = [...a];
+      for (let i = r.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [r[i], r[j]] = [r[j], r[i]];
+      }
+      return r;
+    }
+
+    function rand(a, b) {
+      return a + Math.random() * (b - a);
+    }
+
+    function randInt(a, b) {
+      return Math.floor(rand(a, b + 1));
+    }
+
+    function generateLayout() {
+      const count = randInt(7, 14);
+      const rects = [];
+      for (let i = 0; i < count; i++) {
+        const w = Math.round(rand(10, 48));
+        const h = Math.round(rand(8, 50));
+        rects.push({ w, h });
+      }
+
+      const placed = [];
+      const gap = 3;
+
+      for (const r of rects) {
+        let best = null;
+        let bestScore = -Infinity;
+
+        for (let attempt = 0; attempt < 300; attempt++) {
+          const x = Math.round(2 + Math.random() * Math.max(1, TILE_W - r.w - 4));
+          const y = Math.round(2 + Math.random() * Math.max(1, TILE_H - r.h - 4));
+
+          let minGap = Infinity;
+          for (const p of placed) {
+            const overlapX = x + r.w + gap > p.x && x < p.x + p.w + gap;
+            const overlapY = y + r.h + gap > p.y && y < p.y + p.h + gap;
+            if (overlapX && overlapY) {
+              minGap = -1;
+              break;
+            }
+            const cx = Math.max(0, Math.abs(x + r.w / 2 - (p.x + p.w / 2)) - (r.w + p.w) / 2);
+            const cy = Math.max(0, Math.abs(y + r.h / 2 - (p.y + p.h / 2)) - (r.h + p.h) / 2);
+            minGap = Math.min(minGap, Math.sqrt(cx * cx + cy * cy));
+          }
+
+          if (minGap === -1) continue;
+          const score = placed.length === 0 ? 1 : minGap;
+          if (score > bestScore) {
+            bestScore = score;
+            best = { x, y, w: r.w, h: r.h };
+          }
+        }
+
+        if (best) placed.push(best);
+      }
+
+      return placed;
+    }
+
+    const LAYOUTS = [RECTS];
+    for (let i = 0; i < 15; i++) {
+      LAYOUTS.push(generateLayout());
+    }
+
+    const state = {
+      fill: '#cccccc',
+      stroke: '#1d1d1b',
+      scale: 1,
+      anim: 0,
+      layout: 0
+    };
+
+    const canvas = document.getElementById('textureCanvas');
+    const ctx = canvas.getContext('2d');
+    const offscreen = document.createElement('canvas');
+    const offCtx = offscreen.getContext('2d');
+
+    let animTime = 0;
+    let animId = null;
+
+    function getCurrentRects() {
+      return LAYOUTS[state.layout];
+    }
+
+    function getVisibleRects(time) {
+      const speed = state.anim / 4000;
+      if (speed === 0) return getCurrentRects();
+      return getCurrentRects().filter((r, i) => {
+        const phase = (i * 0.77 + i * 0.13) % 1;
+        const t = ((time * speed) + phase) % 1;
+        return t < 0.45;
+      });
+    }
+
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+    }
+
+    function render() {
+      const s = state.scale;
+      const tileW = Math.ceil(TILE_W * s);
+      const tileH = Math.ceil(TILE_H * s);
+
+      offscreen.width = tileW;
+      offscreen.height = tileH;
+
+      offCtx.clearRect(0, 0, tileW, tileH);
+
+      offCtx.fillStyle = state.fill;
+      getVisibleRects(animTime).forEach(r => {
+        offCtx.fillRect(r.x * s, r.y * s, r.w * s, r.h * s);
+      });
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = state.stroke;
+      ctx.fillRect(0, 0, w, h);
+
+      for (let y = 0; y < h; y += tileH) {
+        for (let x = 0; x < w; x += tileW) {
+          ctx.drawImage(offscreen, x, y, tileW, tileH);
+        }
+      }
+    }
+
+    function tick() {
+      if (state.anim > 0) {
+        animTime++;
+        render();
+        animId = requestAnimationFrame(tick);
+      } else {
+        animId = null;
+      }
+    }
+
+    function startAnim() {
+      if (animId) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+      if (state.anim > 0) {
+        tick();
+      }
+    }
+
+    const fillPicker = document.getElementById('fillPicker');
+    const fillCircle = document.getElementById('fillCircle');
+    fillPicker.addEventListener('input', (e) => {
+      state.fill = e.target.value;
+      fillCircle.style.background = state.fill;
+      render();
+    });
+
+    const strokePicker = document.getElementById('strokePicker');
+    const strokeCircle = document.getElementById('strokeCircle');
+    strokePicker.addEventListener('input', (e) => {
+      state.stroke = e.target.value;
+      strokeCircle.style.background = state.stroke;
+      render();
+    });
+
+    const scaleSlider = document.getElementById('scaleSlider');
+    const scaleLabel = document.getElementById('scaleLabel');
+    scaleSlider.addEventListener('input', (e) => {
+      state.scale = parseFloat(e.target.value);
+      scaleLabel.textContent = state.scale.toFixed(1);
+      render();
+    });
+
+    const animSlider = document.getElementById('animSlider');
+    const animLabel = document.getElementById('animLabel');
+    animSlider.addEventListener('input', (e) => {
+      state.anim = parseInt(e.target.value);
+      animLabel.textContent = state.anim;
+      startAnim();
+      if (state.anim === 0) render();
+    });
+
+    function downloadBlob(blob, filename) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    document.getElementById('btnSVG').addEventListener('click', () => {
+      const rects = state.anim > 0 ? getVisibleRects(animTime) : RECTS;
+      let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${TILE_W} ${TILE_H}">\n`;
+      svg += `  <rect x="0" y="0" width="${TILE_W}" height="${TILE_H}" fill="${state.stroke}"/>\n`;
+      rects.forEach(r => {
+        svg += `  <rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${state.fill}"/>\n`;
+      });
+      svg += `</svg>`;
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      downloadBlob(blob, 'texture.svg');
+    });
+
+    document.getElementById('btnPNG').addEventListener('click', () => {
+      canvas.toBlob(blob => downloadBlob(blob, 'texture.png'));
+    });
+
+    document.getElementById('btnRandom').addEventListener('click', () => {
+      state.layout = (state.layout + 1) % LAYOUTS.length;
+      render();
+    });
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      render();
+    });
+
+    resizeCanvas();
+    render();
+  </script>
+</body>
+</html>

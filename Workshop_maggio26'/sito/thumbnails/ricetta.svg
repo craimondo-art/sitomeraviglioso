@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#fff5e6"/>
+  <rect x="100" y="40" width="600" height="400" rx="8" fill="#ffffff" stroke="#ddd" stroke-width="1"/>
+  <path d="M100 40 L120 55 L140 40 L160 55 L180 40 L200 55 L220 40 L240 55 L260 40 L280 55 L300 40 L320 55 L340 40 L360 55 L380 40 L400 55 L420 40 L440 55 L460 40 L480 55 L500 40 L520 55 L540 40 L560 55 L580 40 L600 55 L620 40 L640 55 L660 40 L680 55 L700 40" fill="none" stroke="#ddd" stroke-width="1"/>
+  <text x="400" y="100" font-family="serif" font-size="28" font-weight="bold" fill="#d44" text-anchor="middle">PANCAKES</text>
+  <text x="400" y="130" font-family="sans-serif" font-size="14" fill="#999" text-anchor="middle">~ 2 persone ~</text>
+  <line x1="140" y1="155" x2="660" y2="155" stroke="#ddd" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="140" y="180" font-family="sans-serif" font-size="14" fill="#333">Farina</text>
+  <text x="620" y="180" font-family="sans-serif" font-size="14" fill="#333" text-anchor="end">200g</text>
+  <text x="140" y="205" font-family="sans-serif" font-size="14" fill="#333">Uova</text>
+  <text x="620" y="205" font-family="sans-serif" font-size="14" fill="#333" text-anchor="end">2</text>
+  <text x="140" y="230" font-family="sans-serif" font-size="14" fill="#333">Latte</text>
+  <text x="620" y="230" font-family="sans-serif" font-size="14" fill="#333" text-anchor="end">250ml</text>
+  <text x="140" y="255" font-family="sans-serif" font-size="14" fill="#333">Burro</text>
+  <text x="620" y="255" font-family="sans-serif" font-size="14" fill="#333" text-anchor="end">30g</text>
+  <line x1="140" y1="270" x2="660" y2="270" stroke="#ddd" stroke-width="1" stroke-dasharray="4,4"/>
+  <circle cx="160" cy="300" r="8" fill="none" stroke="#d44" stroke-width="1"/>
+  <text x="176" y="305" font-family="sans-serif" font-size="12" fill="#666">Mescolare farina e uova</text>
+  <circle cx="160" cy="330" r="8" fill="none" stroke="#d44" stroke-width="1"/>
+  <text x="176" y="335" font-family="sans-serif" font-size="12" fill="#666">Aggiungere latte gradualmente</text>
+  <circle cx="160" cy="360" r="8" fill="none" stroke="#d44" stroke-width="1"/>
+  <text x="176" y="365" font-family="sans-serif" font-size="12" fill="#666">Cuocere in padella antiaderente</text>
+  <rect x="520" y="100" width="6" height="6" fill="#e82e89" transform="rotate(30,523,103)" opacity="0.4"/>
+  <rect x="550" y="140" width="5" height="5" fill="#ffabe5" transform="rotate(45,552,142)" opacity="0.4"/>
+  <rect x="580" y="90" width="4" height="8" fill="#d44" transform="rotate(15,582,94)" opacity="0.4"/>
+  <circle cx="540" cy="180" r="3" fill="#e82e89" opacity="0.3"/>
+  <rect x="600" y="120" width="5" height="5" fill="#ffabe5" transform="rotate(60,602,122)" opacity="0.3"/>
+</svg>
