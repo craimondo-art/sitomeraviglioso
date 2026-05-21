@@ -169,6 +169,19 @@
       img.src = url;
     }
 
+    // --- Fill control ---
+    const fillPicker = document.getElementById('fillPicker');
+    const fillCircle = document.getElementById('fillCircle');
+    const btnFill = document.getElementById('btnFill');
+
+    btnFill.addEventListener('click', () => fillPicker.click());
+
+    fillPicker.addEventListener('input', (e) => {
+      state.fill = e.target.value;
+      fillCircle.style.background = state.fill;
+      render();
+    });
+
     window.addEventListener('resize', () => {
       resizeCanvas();
       render();
