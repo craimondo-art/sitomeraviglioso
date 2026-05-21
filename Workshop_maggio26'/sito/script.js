@@ -63,7 +63,7 @@ function renderSlides() {
   projects.forEach((project, i) => {
     const slide = document.createElement('div');
     slide.className = 'slide';
-    slide.style.backgroundImage = `url(${project.thumbnail})`;
+    slide.style.backgroundImage = `url("${project.thumbnail}")`;
 
     const overlay = document.createElement('div');
     overlay.className = 'slide-overlay';
