@@ -198,36 +198,31 @@
     }
 
     const perlin = new PerlinNoise();
-    let noiseCache = null;
-    let noiseCacheW = 0;
-    let noiseCacheH = 0;
+    let noisePattern = null;
+    let noiseTime = 0;
+    let animId = null;
 
-    function getNoiseCache(w, h) {
-      if (noiseCache && noiseCacheW === w && noiseCacheH === h) {
-        return noiseCache;
-      }
-      noiseCache = document.createElement('canvas');
-      noiseCache.width = w;
-      noiseCache.height = h;
-      noiseCacheW = w;
-      noiseCacheH = h;
-      const nc = noiseCache.getContext('2d');
-      const imgData = nc.createImageData(w, h);
+    function buildNoisePattern() {
+      const size = 256;
+      const nc = document.createElement('canvas');
+      nc.width = size;
+      nc.height = size;
+      const nctx = nc.getContext('2d');
+      const imgData = nctx.createImageData(size, size);
       const d = imgData.data;
-      const freq = 0.04;
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const n = perlin.noise(x * freq, y * freq);
-          const idx = (y * w + x) * 4;
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const n = perlin.noise(x * 0.08, y * 0.08);
+          const idx = (y * size + x) * 4;
           const val = Math.round(128 + n * 128);
           d[idx] = val;
           d[idx + 1] = val;
           d[idx + 2] = val;
-          d[idx + 3] = 255;
+          d[idx + 3] = 128;
         }
       }
-      nc.putImageData(imgData, 0, 0);
-      return noiseCache;
+      nctx.putImageData(imgData, 0, 0);
+      noisePattern = nctx.createPattern(nc, 'repeat');
     }
 
     function resizeCanvas() {
@@ -266,11 +261,33 @@
         }
       }
 
-      if (state.noise > 0) {
-        const nc = getNoiseCache(w, h);
+      if (state.noise > 0 && noisePattern) {
+        ctx.save();
         ctx.globalAlpha = state.noise / 200;
-        ctx.drawImage(nc, 0, 0);
-        ctx.globalAlpha = 1;
+        ctx.translate(noiseTime * 0.3, noiseTime * 0.2);
+        ctx.fillStyle = noisePattern;
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      }
+    }
+
+    function tick() {
+      if (state.noise > 0) {
+        noiseTime++;
+        render();
+        animId = requestAnimationFrame(tick);
+      } else {
+        animId = null;
+      }
+    }
+
+    function startNoiseAnim() {
+      if (animId) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+      if (state.noise > 0) {
+        tick();
       }
     }
 
@@ -303,18 +320,16 @@
     noiseSlider.addEventListener('input', (e) => {
       state.noise = parseInt(e.target.value);
       noiseLabel.textContent = state.noise;
-      if (state.noise > 0) {
-        noiseCache = null;
-      }
-      render();
+      startNoiseAnim();
+      if (state.noise === 0) render();
     });
 
     window.addEventListener('resize', () => {
-      noiseCache = null;
       resizeCanvas();
       render();
     });
 
+    buildNoisePattern();
     resizeCanvas();
     render();
   </script>
