@@ -198,32 +198,8 @@
     }
 
     const perlin = new PerlinNoise();
-    let noisePattern = null;
     let noiseTime = 0;
     let animId = null;
-
-    function buildNoisePattern() {
-      const size = 256;
-      const nc = document.createElement('canvas');
-      nc.width = size;
-      nc.height = size;
-      const nctx = nc.getContext('2d');
-      const imgData = nctx.createImageData(size, size);
-      const d = imgData.data;
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-          const n = perlin.noise(x * 0.08, y * 0.08);
-          const idx = (y * size + x) * 4;
-          const val = Math.round(128 + n * 128);
-          d[idx] = val;
-          d[idx + 1] = val;
-          d[idx + 2] = val;
-          d[idx + 3] = 128;
-        }
-      }
-      nctx.putImageData(imgData, 0, 0);
-      noisePattern = nctx.createPattern(nc, 'repeat');
-    }
 
     function resizeCanvas() {
       const dpr = window.devicePixelRatio || 1;
@@ -231,6 +207,23 @@
       canvas.height = window.innerHeight * dpr;
       canvas.style.width = window.innerWidth + 'px';
       canvas.style.height = window.innerHeight + 'px';
+    }
+
+    function getAnimatedRects(time) {
+      const intensity = state.noise / 100;
+      const displace = intensity * 4;
+      const pulse = intensity * 0.08;
+      return RECTS.map(r => {
+        const nx = perlin.noise(r.x * 0.05 + time * 0.004, r.y * 0.05);
+        const ny = perlin.noise(r.x * 0.05, r.y * 0.05 + time * 0.004);
+        const ns = perlin.noise(r.x * 0.04 + time * 0.002, r.y * 0.04 + 50);
+        return {
+          x: r.x + nx * displace,
+          y: r.y + ny * displace,
+          w: r.w * (1 + ns * pulse),
+          h: r.h * (1 + ns * pulse)
+        };
+      });
     }
 
     function render() {
@@ -243,8 +236,10 @@
 
       offCtx.clearRect(0, 0, tileW, tileH);
 
+      const rects = (state.noise > 0) ? getAnimatedRects(noiseTime) : RECTS;
+
       offCtx.fillStyle = state.fill;
-      RECTS.forEach(r => {
+      rects.forEach(r => {
         offCtx.fillRect(r.x * s, r.y * s, r.w * s, r.h * s);
       });
 
@@ -259,15 +254,6 @@
         for (let x = 0; x < w; x += tileW) {
           ctx.drawImage(offscreen, x, y, tileW, tileH);
         }
-      }
-
-      if (state.noise > 0 && noisePattern) {
-        ctx.save();
-        ctx.globalAlpha = state.noise / 200;
-        ctx.translate(noiseTime * 0.3, noiseTime * 0.2);
-        ctx.fillStyle = noisePattern;
-        ctx.fillRect(0, 0, w, h);
-        ctx.restore();
       }
     }
 
@@ -329,7 +315,6 @@
       render();
     });
 
-    buildNoisePattern();
     resizeCanvas();
     render();
   </script>
