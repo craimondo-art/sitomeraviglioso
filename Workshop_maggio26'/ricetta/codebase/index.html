@@ -8,7 +8,10 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f5e6d0;
+    background:
+      repeating-linear-gradient(90deg, rgba(200,50,50,0.25) 0px, rgba(200,50,50,0.25) 2px, transparent 2px, transparent 60px),
+      repeating-linear-gradient(0deg, rgba(200,50,50,0.10) 0px, rgba(200,50,50,0.10) 2px, transparent 2px, transparent 60px),
+      #fff;
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -26,7 +29,7 @@
   .people-box {
     background: #fff;
     border: 2px solid #d4a574;
-    border-radius: 12px;
+    border-radius: 60px;
     padding: 12px 20px;
     margin-bottom: 20px;
     display: flex;
@@ -36,18 +39,24 @@
     font-size: 1.1rem;
     color: #3d2b1f;
   }
-  .people-box label { font-weight: 600; }
   .people-box input {
-    width: 60px;
-    padding: 6px 10px;
+    width: 40px;
+    padding: 2px 4px;
     font-size: 1.1rem;
     text-align: center;
-    border: 2px solid #d4a574;
-    border-radius: 8px;
+    border: none;
+    border-bottom: 2px solid #d4a574;
     outline: none;
     font-weight: 600;
+    background: transparent;
   }
-  .people-box input:focus { border-color: #b87333; }
+  .people-box input:focus { border-bottom-color: #b87333; }
+  .people-box input[type=number]::-webkit-inner-spin-button,
+  .people-box input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .people-box input[type=number] { -moz-appearance: textfield; }
   .scontrino {
     background: #fff;
     padding: 28px 24px;
@@ -144,10 +153,11 @@
 </head>
 <body>
 <div class="container">
-  <h1>Ricetta Pancakes</h1>
+  <h1>Ricetta per i pancakes</h1>
   <div class="people-box">
-    <label for="people">Persone:</label>
+    <span>per</span>
     <input type="number" id="people" value="2" min="1" max="20">
+    <span>persone</span>
   </div>
   <div class="scontrino-wrapper" id="scontrino-wrapper">
     <div class="scontrino" id="scontrino">
