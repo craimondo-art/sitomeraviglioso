@@ -77,19 +77,19 @@
       pointer-events: none;
     }
 
-    .btn-scale {
+    .btn-range {
       min-width: 200px;
       cursor: default;
       padding: 12px 20px;
     }
 
-    .btn-scale input[type="range"] {
+    .btn-range input[type="range"] {
       flex: 1;
-      min-width: 80px;
+      min-width: 60px;
       cursor: pointer;
     }
 
-    .btn-scale .scale-value {
+    .btn-range .range-value {
       min-width: 28px;
       text-align: center;
       font-size: 13px;
@@ -107,14 +107,19 @@
     </div>
 
     <div class="btn btn-color" id="btnStroke">
-      Bg
+      Stroke
       <span class="color-circle" id="strokeCircle" style="background: #1d1d1b;"></span>
       <input type="color" id="strokePicker" value="#1d1d1b">
     </div>
 
-    <div class="btn btn-scale" id="btnScale">
-      <span class="scale-value" id="scaleLabel">1.0</span>
+    <div class="btn btn-range" id="btnScale">
+      <span class="range-value" id="scaleLabel">1.0</span>
       <input type="range" id="scaleSlider" min="0.25" max="3" step="0.1" value="1">
+    </div>
+
+    <div class="btn btn-range" id="btnNoise">
+      <span class="range-value" id="noiseLabel">0</span>
+      <input type="range" id="noiseSlider" min="0" max="100" step="1" value="0">
     </div>
   </div>
 
@@ -138,14 +143,92 @@
 
     const state = {
       fill: '#cccccc',
-      bg: '#1d1d1b',
-      scale: 1
+      stroke: '#1d1d1b',
+      scale: 1,
+      noise: 0
     };
 
     const canvas = document.getElementById('textureCanvas');
     const ctx = canvas.getContext('2d');
     const offscreen = document.createElement('canvas');
     const offCtx = offscreen.getContext('2d');
+
+    // --- Perlin Noise ---
+    class PerlinNoise {
+      constructor() {
+        this.p = [];
+        for (let i = 0; i < 256; i++) this.p[i] = i;
+        for (let i = 255; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [this.p[i], this.p[j]] = [this.p[j], this.p[i]];
+        }
+        this.p = [...this.p, ...this.p];
+      }
+
+      fade(t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+      }
+
+      lerp(a, b, t) {
+        return a + t * (b - a);
+      }
+
+      grad(hash, x, y) {
+        const h = hash & 3;
+        const u = h < 2 ? x : y;
+        const v = h < 2 ? y : x;
+        return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+      }
+
+      noise(x, y) {
+        const X = Math.floor(x) & 255;
+        const Y = Math.floor(y) & 255;
+        const xf = x - Math.floor(x);
+        const yf = y - Math.floor(y);
+        const u = this.fade(xf);
+        const v = this.fade(yf);
+        const aa = this.p[this.p[X] + Y];
+        const ab = this.p[this.p[X] + Y + 1];
+        const ba = this.p[this.p[X + 1] + Y];
+        const bb = this.p[this.p[X + 1] + Y + 1];
+        const x1 = this.lerp(this.grad(aa, xf, yf), this.grad(ba, xf - 1, yf), u);
+        const x2 = this.lerp(this.grad(ab, xf, yf - 1), this.grad(bb, xf - 1, yf - 1), u);
+        return this.lerp(x1, x2, v);
+      }
+    }
+
+    const perlin = new PerlinNoise();
+    let noiseCache = null;
+    let noiseCacheW = 0;
+    let noiseCacheH = 0;
+
+    function getNoiseCache(w, h) {
+      if (noiseCache && noiseCacheW === w && noiseCacheH === h) {
+        return noiseCache;
+      }
+      noiseCache = document.createElement('canvas');
+      noiseCache.width = w;
+      noiseCache.height = h;
+      noiseCacheW = w;
+      noiseCacheH = h;
+      const nc = noiseCache.getContext('2d');
+      const imgData = nc.createImageData(w, h);
+      const d = imgData.data;
+      const freq = 0.04;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const n = perlin.noise(x * freq, y * freq);
+          const idx = (y * w + x) * 4;
+          const val = Math.round(128 + n * 128);
+          d[idx] = val;
+          d[idx + 1] = val;
+          d[idx + 2] = val;
+          d[idx + 3] = 255;
+        }
+      }
+      nc.putImageData(imgData, 0, 0);
+      return noiseCache;
+    }
 
     function resizeCanvas() {
       const dpr = window.devicePixelRatio || 1;
@@ -174,13 +257,20 @@
       const h = window.innerHeight;
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = state.bg;
+      ctx.fillStyle = state.stroke;
       ctx.fillRect(0, 0, w, h);
 
       for (let y = 0; y < h; y += tileH) {
         for (let x = 0; x < w; x += tileW) {
           ctx.drawImage(offscreen, x, y, tileW, tileH);
         }
+      }
+
+      if (state.noise > 0) {
+        const nc = getNoiseCache(w, h);
+        ctx.globalAlpha = state.noise / 200;
+        ctx.drawImage(nc, 0, 0);
+        ctx.globalAlpha = 1;
       }
     }
 
@@ -195,8 +285,8 @@
     const strokePicker = document.getElementById('strokePicker');
     const strokeCircle = document.getElementById('strokeCircle');
     strokePicker.addEventListener('input', (e) => {
-      state.bg = e.target.value;
-      strokeCircle.style.background = state.bg;
+      state.stroke = e.target.value;
+      strokeCircle.style.background = state.stroke;
       render();
     });
 
@@ -208,7 +298,19 @@
       render();
     });
 
+    const noiseSlider = document.getElementById('noiseSlider');
+    const noiseLabel = document.getElementById('noiseLabel');
+    noiseSlider.addEventListener('input', (e) => {
+      state.noise = parseInt(e.target.value);
+      noiseLabel.textContent = state.noise;
+      if (state.noise > 0) {
+        noiseCache = null;
+      }
+      render();
+    });
+
     window.addEventListener('resize', () => {
+      noiseCache = null;
       resizeCanvas();
       render();
     });
